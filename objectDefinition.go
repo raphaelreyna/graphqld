@@ -100,7 +100,7 @@ func (od *objectDefinition) setResolvers() error {
 
 					return x, nil
 				default:
-					panic("unsupported return typee")
+					panic("unsupported return type")
 				}
 			case *graphql.Object:
 				var jsonOutput interface{}

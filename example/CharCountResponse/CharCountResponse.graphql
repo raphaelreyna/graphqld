@@ -1,4 +1,4 @@
 type CharCountResponse {
-    input: String!
-    output: Int!
+    string: String!
+    count: Int!
 }
