@@ -16,6 +16,9 @@ func main() {
 		rootDir string
 	)
 	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println(r)
+		}
 		os.Exit(retCode)
 	}()
 
@@ -32,6 +35,10 @@ func main() {
 	if err := g.synthesizeRootQueryConf(); err != nil {
 		panic(err)
 	}
+	if err := g.instantiateTypesObjects(); err != nil {
+		panic(err)
+	}
+	g.setTypes()
 	if err := g.rootQuery.setResolvers(); err != nil {
 		panic(err)
 	}
@@ -56,5 +63,9 @@ func main() {
 		json.NewEncoder(w).Encode(result)
 	}))
 
-	fmt.Println(http.ListenAndServe(":8080", nil))
+	port := "8080"
+	if x := os.Getenv("PORT"); x != "" {
+		port = x
+	}
+	fmt.Println(http.ListenAndServe(":"+port, nil))
 }

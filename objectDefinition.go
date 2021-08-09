@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -73,7 +74,19 @@ func (od *objectDefinition) setResolvers() error {
 
 					return x, nil
 				default:
-					panic("unsupported return type")
+					switch x := x.OfType.(type) {
+					case *graphql.Object:
+						var jsonOutput interface{}
+						if err := json.Unmarshal(output, &jsonOutput); err != nil {
+							return nil, err
+						}
+						return jsonOutput, nil
+					default:
+						panic(fmt.Sprintf(
+							"unsupported return type: %+T",
+							x,
+						))
+					}
 				}
 			case *graphql.Scalar:
 				switch x {
@@ -87,10 +100,19 @@ func (od *objectDefinition) setResolvers() error {
 
 					return x, nil
 				default:
-					panic("unsupported return type")
+					panic("unsupported return typee")
 				}
+			case *graphql.Object:
+				var jsonOutput interface{}
+				if err := json.Unmarshal(output, &jsonOutput); err != nil {
+					return nil, err
+				}
+				return jsonOutput, nil
 			default:
-				panic("unsupported return type")
+				panic(fmt.Sprintf(
+					"unsupported return type: %T",
+					x,
+				))
 			}
 		})
 	}
