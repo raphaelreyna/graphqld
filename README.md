@@ -21,7 +21,7 @@ type CharCountResponse {
   count: Int!
 }
  ```
-To serve up this graph oon port 8000 with graphqld we create a directory with the following structure and run `PORT=8000 graphqld ./example`:
+To serve up this graph on port 8000 with graphqld we create a directory with the following structure and run `PORT=8000 graphqld ./example`:
 ```
 example
 ├── charCount.py
@@ -30,6 +30,10 @@ example
 ├── javascript.js
 └── python.py
 ```
+
+
+See [the example directory](https://github.com/raphaelreyna/graphqld/tree/master/example) to check out examples of these scripts.
+
 
 # How it works
 The graph is built scanning the given directory and querying each executable for its fields:
@@ -53,5 +57,3 @@ $ ./example/charCount.py --string hello
 
 Each executable is used as the resolver for the field it reports.
 Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAME}}.graphql` file.
-
-See [the example directory](https://github.com/raphaelreyna/graphqld/tree/master/example) to check out examples of these scripts.
