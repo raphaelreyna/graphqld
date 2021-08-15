@@ -11,6 +11,8 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
+
+	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
 type graph struct {
@@ -62,10 +64,17 @@ func (g *graph) synthesizeRootQueryConf() error {
 			continue
 		}
 
-		var (
-			execPath = filepath.Join(g.rootDir, dirEntry.Name())
-		)
-		fieldsOutput, err := newFieldsOutput(execPath, "Query")
+		var execPath = filepath.Join(g.rootDir, dirEntry.Name())
+
+		file, err := scan.NewFile(rootDir, info)
+		if err != nil {
+			return fmt.Errorf(
+				"error %s: %w",
+				execPath, err,
+			)
+		}
+
+		fieldsOutput, err := scan.Scan("Query", file)
 		if err != nil {
 			return fmt.Errorf(
 				"error reading fields from %s: %w",
@@ -73,29 +82,28 @@ func (g *graph) synthesizeRootQueryConf() error {
 			)
 		}
 
-		for _, fieldOutput := range fieldsOutput.fields {
+		for _, fieldOutput := range fieldsOutput.Fields {
 			gqlField := graphql.Field{
-				Name: fieldOutput.name,
-				Type: g.gqlOutputFromType("Query", fieldOutput.name, fieldOutput.gqlType),
+				Name: fieldOutput.Name,
+				Type: g.gqlOutputFromType("Query", fieldOutput.Name, fieldOutput.Type),
 			}
 
-			if args := fieldOutput.arguments; 0 < len(args) {
+			if args := fieldOutput.Arguments; 0 < len(args) {
 				arguments := graphql.FieldConfigArgument{}
 
 				for _, arg := range args {
 					arguments[arg.Name.Value] = &graphql.ArgumentConfig{
-						Type: g.gqlOutputFromType("Query", fieldOutput.name, arg.Type),
+						Type: g.gqlOutputFromType("Query", fieldOutput.Name, arg.Type),
 					}
 				}
 
 				gqlField.Args = arguments
 			}
 
-			gqlFields[fieldOutput.name] = &gqlField
+			gqlFields[fieldOutput.Name] = &gqlField
 
-			definition.resolverPaths[fieldOutput.name] = execPath
+			definition.resolverPaths[fieldOutput.Name] = execPath
 		}
-
 	}
 
 	definition.definitionString = fmt.Sprintf("type Query {\n\t%s\n}", strings.Join(fields, "\n\t"))
@@ -208,7 +216,7 @@ func (g *graph) instantiateTypesObjects() error {
 		g.tm = make(typeObjectMap)
 	}
 
-	for ut, _ := range g.uninstantiatedTypes {
+	for ut := range g.uninstantiatedTypes {
 		dirEntries, err := os.ReadDir(g.rootDir)
 		if err != nil {
 			return err

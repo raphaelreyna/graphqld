@@ -1,4 +1,4 @@
-package main
+package scan
 
 import (
 	"encoding/json"
@@ -10,61 +10,40 @@ import (
 	"github.com/graphql-go/graphql/language/parser"
 )
 
-type fieldOutput struct {
-	raw       string
-	name      string
-	gqlType   ast.Type
-	arguments []*ast.InputValueDefinition
+type execFile struct {
+	path string
 }
 
-func newFieldOutput(fd *ast.FieldDefinition) fieldOutput {
-	return fieldOutput{
-		name:      fd.Name.Value,
-		gqlType:   fd.Type,
-		arguments: fd.Arguments,
-	}
+func (ef execFile) Path() string {
+	return ef.path
 }
 
-type fieldsOutput struct {
-	path       string
-	parentName string
-	fields     []*fieldOutput
-}
-
-func newFieldsOutput(path, parent string) (*fieldsOutput, error) {
-	var (
-		fieldStrings []string
-
-		fo = fieldsOutput{
-			path:       path,
-			parentName: parent,
-		}
-	)
-
+func (ef execFile) Fields() ([]*FieldOutput, error) {
+	var fieldStrings []string
 	// populate fieldStrings
 	{
-		cmd := exec.Command(path, "--cggi-fields")
+		cmd := exec.Command(ef.path, "--cggi-fields")
 		schemaBytes, err := cmd.Output()
 		if err != nil {
 			return nil, fmt.Errorf(
 				"error executing %s --cggi-fields: %w",
-				path, err,
+				ef.path, err,
 			)
 		}
 
 		if err := json.Unmarshal(schemaBytes, &fieldStrings); err != nil {
 			return nil, fmt.Errorf(
 				"error parsing json output of %s --cggi-fields: %w",
-				path, err,
+				ef.path, err,
 			)
 		}
 	}
 
-	fo.fields = make([]*fieldOutput, len(fieldStrings))
+	fields := make([]*FieldOutput, len(fieldStrings))
 
 	// parse field strings
 	var (
-		fields []*ast.FieldDefinition
+		astFieldDefs []*ast.FieldDefinition
 	)
 	{
 		parsedOutput, err := parser.Parse(parser.ParseParams{
@@ -76,14 +55,14 @@ func newFieldsOutput(path, parent string) (*fieldsOutput, error) {
 		if err != nil {
 			return nil, fmt.Errorf(
 				"error parsing fields returned by %s: %w",
-				path, err,
+				ef.path, err,
 			)
 		}
 
 		if len(parsedOutput.Definitions) != 1 {
 			return nil, fmt.Errorf(
 				"error parsing fields returned by %s: expected 1 definition",
-				path,
+				ef.path,
 			)
 		}
 
@@ -91,19 +70,19 @@ func newFieldsOutput(path, parent string) (*fieldsOutput, error) {
 		if !ok {
 			return nil, fmt.Errorf(
 				"error parsing fields returned by %s: no object definition found",
-				path,
+				ef.path,
 			)
 		}
 
-		fields = objDef.Fields
+		astFieldDefs = objDef.Fields
 	}
 
-	for idx, field := range fields {
+	for idx, field := range astFieldDefs {
 		output := newFieldOutput(field)
-		output.raw = fieldStrings[idx]
+		output.Raw = fieldStrings[idx]
 
-		fo.fields[idx] = &output
+		fields[idx] = &output
 	}
 
-	return &fo, nil
+	return fields, nil
 }

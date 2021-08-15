@@ -35,6 +35,9 @@ func main() {
 	if err := g.synthesizeRootQueryConf(); err != nil {
 		panic(err)
 	}
+
+	fmt.Printf("graph: %+v\n", g.uninstantiatedTypes)
+
 	if err := g.instantiateTypesObjects(); err != nil {
 		panic(err)
 	}

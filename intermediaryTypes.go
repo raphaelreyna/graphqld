@@ -8,7 +8,7 @@ func (t _type) Name() string {
 	return t.name
 }
 
-func (_ _type) Description() string {
+func (_type) Description() string {
 	defer func() {
 		panic("(_type)Description should never be called")
 	}()
@@ -16,7 +16,7 @@ func (_ _type) Description() string {
 	return ""
 }
 
-func (_ _type) String() string {
+func (_type) String() string {
 	defer func() {
 		panic("(_type)String should never be called")
 	}()
@@ -24,7 +24,7 @@ func (_ _type) String() string {
 	return ""
 }
 
-func (_ _type) Error() error {
+func (_type) Error() error {
 	defer func() {
 		panic("(_type)Error should never be called")
 	}()
@@ -40,7 +40,7 @@ func (t _listType) Name() string {
 	return t.name
 }
 
-func (_ _listType) Description() string {
+func (_listType) Description() string {
 	defer func() {
 		panic("(_listType)Description should never be called")
 	}()
@@ -48,7 +48,7 @@ func (_ _listType) Description() string {
 	return ""
 }
 
-func (_ _listType) String() string {
+func (_listType) String() string {
 	defer func() {
 		panic("(_listType)String should never be called")
 	}()
@@ -56,7 +56,7 @@ func (_ _listType) String() string {
 	return ""
 }
 
-func (_ _listType) Error() error {
+func (_listType) Error() error {
 	defer func() {
 		panic("(_listType)Error should never be called")
 	}()
@@ -72,7 +72,7 @@ func (t _nonNullType) Name() string {
 	return t.name
 }
 
-func (_ _nonNullType) Description() string {
+func (_nonNullType) Description() string {
 	defer func() {
 		panic("(_nonNullType)Description should never be called")
 	}()
@@ -80,7 +80,7 @@ func (_ _nonNullType) Description() string {
 	return ""
 }
 
-func (_ _nonNullType) String() string {
+func (_nonNullType) String() string {
 	defer func() {
 		panic("(_nonNullType)String should never be called")
 	}()
@@ -88,7 +88,7 @@ func (_ _nonNullType) String() string {
 	return ""
 }
 
-func (_ _nonNullType) Error() error {
+func (_nonNullType) Error() error {
 	defer func() {
 		panic("(_nonNullType)Error should never be called")
 	}()
