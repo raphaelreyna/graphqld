@@ -73,7 +73,11 @@ func (gf graphqlFile) Fields() ([]*FieldOutput, error) {
 	}
 
 	for _, field := range astFieldDefs {
-		output := newFieldOutput(field)
+		output := FieldOutput{
+			Name:      field.Name.Value,
+			Type:      field.Type,
+			Arguments: field.Arguments,
+		}
 
 		fields = append(fields, &output)
 	}

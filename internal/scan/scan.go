@@ -3,6 +3,8 @@ package scan
 import (
 	"io/fs"
 	"path/filepath"
+
+	"github.com/graphql-go/graphql/language/ast"
 )
 
 func Scan(parent string, f File) (*FileFields, error) {
@@ -23,6 +25,23 @@ func ScanForType(dir, parent, typeName string) (*ObjectDefinition, error) {
 		panic("unimplemented")
 	}()
 	return nil, nil
+}
+
+// FieldOutput is an abstraction of the partial definitions
+// that graphqld obtains from scanning its root directory.
+//
+// For executables, this is obtained by running the executable with the `--cggi-fields`.
+type FieldOutput struct {
+	Raw       string
+	Name      string
+	Type      ast.Type
+	Arguments []*ast.InputValueDefinition
+}
+
+type FileFields struct {
+	Path       string
+	ParentName string
+	Fields     []*FieldOutput
 }
 
 type File interface {

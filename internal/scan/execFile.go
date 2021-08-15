@@ -78,10 +78,12 @@ func (ef execFile) Fields() ([]*FieldOutput, error) {
 	}
 
 	for idx, field := range astFieldDefs {
-		output := newFieldOutput(field)
-		output.Raw = fieldStrings[idx]
-
-		fields[idx] = &output
+		fields[idx] = &FieldOutput{
+			Name:      field.Name.Value,
+			Type:      field.Type,
+			Arguments: field.Arguments,
+			Raw:       fieldStrings[idx],
+		}
 	}
 
 	return fields, nil
