@@ -36,7 +36,9 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			return graphql.NewNonNull(scalar)
 		}
 
-		to := intermediary.NonNullType{named.Name.Value}
+		to := intermediary.NonNullType{
+			TypeName: named.Name.Value,
+		}
 		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
 			g.uninstantiatedTypes[to.TypeName] = to
 		}
@@ -59,7 +61,9 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			return graphql.NewList(scalar)
 		}
 
-		to := intermediary.ListType{named.Name.Value}
+		to := intermediary.ListType{
+			TypeName: named.Name.Value,
+		}
 		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
 			g.uninstantiatedTypes[to.TypeName] = to
 		}
@@ -78,7 +82,9 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			return scalar
 		}
 
-		to := intermediary.Type{x.Name.Value}
+		to := intermediary.Type{
+			TypeName: x.Name.Value,
+		}
 		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
 			g.uninstantiatedTypes[to.TypeName] = to
 		}
