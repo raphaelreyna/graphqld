@@ -42,12 +42,12 @@ func main() {
 		panic(err)
 	}
 	g.setTypes()
-	if err := g.rootQuery.setResolvers(); err != nil {
+	if err := setResolvers(&g.rootQuery); err != nil {
 		panic(err)
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: graphql.NewObject(g.rootQuery.objectConf),
+		Query: graphql.NewObject(g.rootQuery.ObjectConf),
 	})
 	if err != nil {
 		panic(err)

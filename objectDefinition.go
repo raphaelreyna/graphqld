@@ -7,17 +7,12 @@ import (
 	"strconv"
 
 	"github.com/graphql-go/graphql"
+	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
-type objectDefinition struct {
-	resolverPaths    map[string]string
-	definitionString string
-	objectConf       graphql.ObjectConfig
-}
-
-func (od *objectDefinition) setResolvers() error {
+func setResolvers(od *scan.ObjectDefinition) error {
 	var (
-		fields = od.objectConf.Fields.(graphql.FieldsThunk)()
+		fields = od.ObjectConf.Fields.(graphql.FieldsThunk)()
 	)
 
 	for name, field := range fields {
@@ -55,7 +50,7 @@ func (od *objectDefinition) setResolvers() error {
 				}
 			}
 
-			cmd := exec.Command(od.resolverPaths[name], args...)
+			cmd := exec.Command(od.ResolverPaths[name], args...)
 			output, err := cmd.Output()
 			if err != nil {
 				return nil, err

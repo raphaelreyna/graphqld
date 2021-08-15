@@ -18,6 +18,13 @@ func Scan(parent string, f File) (*FileFields, error) {
 	}, nil
 }
 
+func ScanForType(dir, parent, typeName string) (*ObjectDefinition, error) {
+	defer func() {
+		panic("unimplemented")
+	}()
+	return nil, nil
+}
+
 type File interface {
 	Path() string
 	Fields() ([]*FieldOutput, error)

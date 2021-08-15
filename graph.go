@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 
+	"github.com/raphaelreyna/graphqld/internal/intermediary"
 	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
@@ -22,7 +22,7 @@ type graph struct {
 	uninstantiatedTypes map[string]interface{}
 	typeReferences      map[typeReference]struct{}
 
-	rootQuery objectDefinition
+	rootQuery scan.ObjectDefinition
 }
 
 func (g *graph) synthesizeRootQueryConf() error {
@@ -32,9 +32,9 @@ func (g *graph) synthesizeRootQueryConf() error {
 
 		rootDir = g.rootDir
 
-		definition = objectDefinition{
-			resolverPaths: map[string]string{},
-			objectConf: graphql.ObjectConfig{
+		definition = scan.ObjectDefinition{
+			ResolverPaths: map[string]string{},
+			ObjectConf: graphql.ObjectConfig{
 				Name: "Query",
 				Fields: graphql.FieldsThunk(func() graphql.Fields {
 					return gqlFields
@@ -60,7 +60,7 @@ func (g *graph) synthesizeRootQueryConf() error {
 			)
 		}
 
-		if !isUserExec(info) {
+		if info.IsDir() {
 			continue
 		}
 
@@ -74,7 +74,7 @@ func (g *graph) synthesizeRootQueryConf() error {
 			)
 		}
 
-		fieldsOutput, err := scan.Scan("Query", file)
+		fieldsOutput, err := scan.Scan("query", file)
 		if err != nil {
 			return fmt.Errorf(
 				"error reading fields from %s: %w",
@@ -102,11 +102,11 @@ func (g *graph) synthesizeRootQueryConf() error {
 
 			gqlFields[fieldOutput.Name] = &gqlField
 
-			definition.resolverPaths[fieldOutput.Name] = execPath
+			definition.ResolverPaths[fieldOutput.Name] = execPath
 		}
 	}
 
-	definition.definitionString = fmt.Sprintf("type Query {\n\t%s\n}", strings.Join(fields, "\n\t"))
+	definition.DefinitionString = fmt.Sprintf("type Query {\n\t%s\n}", strings.Join(fields, "\n\t"))
 
 	g.rootQuery = definition
 
@@ -143,15 +143,15 @@ func (g *graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			return graphql.NewNonNull(scalar)
 		}
 
-		to := _nonNullType{named.Name.Value}
-		if _, exists := g.uninstantiatedTypes[to.name]; !exists {
-			g.uninstantiatedTypes[to.name] = to
+		to := intermediary.NonNullType{named.Name.Value}
+		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
+			g.uninstantiatedTypes[to.TypeName] = to
 		}
 		if referencingFieldName != "" && referencingTypeName != "" {
 			g.typeReferences[typeReference{
 				referenceringType: referencingTypeName,
 				referencingField:  referencingFieldName,
-				referencedType:    to.name,
+				referencedType:    to.TypeName,
 				typeWrapper:       twNonNull,
 			}] = struct{}{}
 		}
@@ -166,16 +166,16 @@ func (g *graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			return graphql.NewList(scalar)
 		}
 
-		to := _listType{named.Name.Value}
-		if _, exists := g.uninstantiatedTypes[to.name]; !exists {
-			g.uninstantiatedTypes[to.name] = to
+		to := intermediary.ListType{named.Name.Value}
+		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
+			g.uninstantiatedTypes[to.TypeName] = to
 		}
 
 		if referencingFieldName != "" && referencingTypeName != "" {
 			g.typeReferences[typeReference{
 				referenceringType: referencingTypeName,
 				referencingField:  referencingFieldName,
-				referencedType:    to.name,
+				referencedType:    to.TypeName,
 				typeWrapper:       twList,
 			}] = struct{}{}
 		}
@@ -185,15 +185,15 @@ func (g *graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			return scalar
 		}
 
-		to := _type{x.Name.Value}
-		if _, exists := g.uninstantiatedTypes[to.name]; !exists {
-			g.uninstantiatedTypes[to.name] = to
+		to := intermediary.Type{x.Name.Value}
+		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
+			g.uninstantiatedTypes[to.TypeName] = to
 		}
 		if referencingFieldName != "" && referencingTypeName != "" {
 			g.typeReferences[typeReference{
 				referenceringType: referencingTypeName,
 				referencingField:  referencingFieldName,
-				referencedType:    to.name,
+				referencedType:    to.TypeName,
 				typeWrapper:       twNone,
 			}] = struct{}{}
 		}
@@ -201,10 +201,6 @@ func (g *graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 		return to
 	}
 	return nil
-}
-
-func isUserExec(info fs.FileInfo) bool {
-	return info.Mode().Perm()&0100 != 0 && !info.IsDir()
 }
 
 func (g *graph) instantiateTypesObjects() error {
@@ -310,7 +306,7 @@ func (g *graph) setTypes() {
 		}
 
 		field := g.rootQuery.
-			objectConf.
+			ObjectConf.
 			Fields.(graphql.FieldsThunk)()[tr.referencingField]
 
 		switch tr.typeWrapper {
@@ -322,4 +318,19 @@ func (g *graph) setTypes() {
 			field.Type = g.tm[tr.referencedType]
 		}
 	}
+}
+
+type typeWrapper uint
+
+const (
+	twNone = iota
+	twNonNull
+	twList
+)
+
+type typeReference struct {
+	referenceringType string
+	referencingField  string
+	referencedType    string
+	typeWrapper       typeWrapper
 }
