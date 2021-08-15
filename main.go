@@ -42,7 +42,7 @@ func main() {
 		panic(err)
 	}
 	g.setTypes()
-	if err := setResolvers(&g.rootQuery); err != nil {
+	if err := g.rootQuery.SetResolvers(); err != nil {
 		panic(err)
 	}
 
