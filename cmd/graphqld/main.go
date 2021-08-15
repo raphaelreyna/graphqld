@@ -8,6 +8,7 @@ import (
 
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/raphaelreyna/graphqld/internal/graph"
 )
 
 func main() {
@@ -28,26 +29,24 @@ func main() {
 	}
 	rootDir = os.Args[1]
 
-	g := graph{
-		rootDir: rootDir,
+	g := graph.Graph{
+		Dir: rootDir,
 	}
 
-	if err := g.synthesizeRootQueryConf(); err != nil {
+	if err := g.SynthesizeRootQueryConf(); err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("graph: %+v\n", g.uninstantiatedTypes)
-
-	if err := g.instantiateTypesObjects(); err != nil {
+	if err := g.InstantiateTypesObjects(); err != nil {
 		panic(err)
 	}
-	g.setTypes()
-	if err := g.rootQuery.SetResolvers(); err != nil {
+	g.SetTypes()
+	if err := g.Query.SetResolvers(); err != nil {
 		panic(err)
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: graphql.NewObject(g.rootQuery.ObjectConf),
+		Query: graphql.NewObject(g.Query.ObjectConf),
 	})
 	if err != nil {
 		panic(err)
