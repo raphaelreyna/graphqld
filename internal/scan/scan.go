@@ -45,6 +45,7 @@ type FileFields struct {
 }
 
 type File interface {
+	IsExec() bool
 	Path() string
 	Fields() ([]*FieldOutput, error)
 }

@@ -11,6 +11,7 @@ import (
 type testFile struct {
 	path   string
 	fields []*FieldOutput
+	isExec bool
 	err    error
 }
 
@@ -20,6 +21,10 @@ func (tf testFile) Path() string {
 
 func (tf testFile) Fields() ([]*FieldOutput, error) {
 	return tf.fields, tf.err
+}
+
+func (tf testFile) IsExec() bool {
+	return tf.isExec
 }
 
 func TestScan(t *testing.T) {

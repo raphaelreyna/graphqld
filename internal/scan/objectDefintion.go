@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -29,6 +30,10 @@ func (od *ObjectDefinition) SetResolvers() error {
 			field     = field
 			name      = name
 		)
+
+		if _, exists := od.ResolverPaths[name]; !exists {
+			continue
+		}
 
 		field.Resolve = graphql.FieldResolveFn(func(p graphql.ResolveParams) (interface{}, error) {
 			var (
@@ -59,6 +64,14 @@ func (od *ObjectDefinition) SetResolvers() error {
 			}
 
 			cmd := exec.Command(od.ResolverPaths[name], args...)
+			if p.Source != nil {
+				source, err := json.Marshal(p.Source)
+				if err != nil {
+					return nil, err
+				}
+
+				cmd.Stdin = bytes.NewReader(source)
+			}
 			output, err := cmd.Output()
 			if err != nil {
 				return nil, err
@@ -76,6 +89,19 @@ func (od *ObjectDefinition) SetResolvers() error {
 					}
 
 					return x, nil
+				case graphql.Boolean:
+					switch x := string(output); x {
+					case "True":
+						fallthrough
+					case "true":
+						return true, nil
+					case "False":
+						fallthrough
+					case "false":
+						return false, nil
+					default:
+						panic(fmt.Sprintf("non bool output: %s", x))
+					}
 				default:
 					switch x := x.OfType.(type) {
 					case *graphql.Object:

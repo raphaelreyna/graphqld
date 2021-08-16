@@ -10,7 +10,8 @@ type Graph struct {
 
 	tm                  typeObjectMap
 	uninstantiatedTypes map[string]interface{}
-	typeReferences      map[typeReference]struct{}
+	typeReferences      []typeReference
+	objDefs             map[string]*scan.ObjectDefinition
 
 	Query scan.ObjectDefinition
 }
@@ -36,8 +37,10 @@ const (
 )
 
 type typeReference struct {
-	referenceringType string
-	referencingField  string
-	referencedType    string
-	typeWrapper       typeWrapper
+	referencingDir       string
+	referencingType      string
+	referencingFieldName string
+	referer              interface{}
+	referencedType       string
+	typeWrapper          typeWrapper
 }

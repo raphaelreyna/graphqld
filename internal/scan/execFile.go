@@ -88,3 +88,7 @@ func (ef execFile) Fields() ([]*FieldOutput, error) {
 
 	return fields, nil
 }
+
+func (execFile) IsExec() bool {
+	return true
+}

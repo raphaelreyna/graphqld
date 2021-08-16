@@ -6,13 +6,15 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/intermediary"
 )
 
-func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName string, t ast.Type) graphql.Output {
-	var standardScalarFromNamedType = func(named *ast.Named) *graphql.Scalar {
+func (g *Graph) gqlOutputFromType(referer interface{}, referencingDir, referencingTypeName, referencingFieldName string, t ast.Type) graphql.Output {
+	var standardBasicScalarFromNamedType = func(named *ast.Named) *graphql.Scalar {
 		switch named.Name.Value {
 		case "String":
 			return graphql.String
 		case "Int":
 			return graphql.Int
+		case "Boolean":
+			return graphql.Boolean
 		default:
 			return nil
 		}
@@ -22,7 +24,7 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 		g.uninstantiatedTypes = make(map[string]interface{})
 	}
 	if g.typeReferences == nil {
-		g.typeReferences = make(map[typeReference]struct{})
+		g.typeReferences = make([]typeReference, 0)
 	}
 
 	switch x := t.(type) {
@@ -32,7 +34,7 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			panic("received nonnamed")
 		}
 
-		if scalar := standardScalarFromNamedType(named); scalar != nil {
+		if scalar := standardBasicScalarFromNamedType(named); scalar != nil {
 			return graphql.NewNonNull(scalar)
 		}
 
@@ -43,12 +45,14 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			g.uninstantiatedTypes[to.TypeName] = to
 		}
 		if referencingFieldName != "" && referencingTypeName != "" {
-			g.typeReferences[typeReference{
-				referenceringType: referencingTypeName,
-				referencingField:  referencingFieldName,
-				referencedType:    to.TypeName,
-				typeWrapper:       twNonNull,
-			}] = struct{}{}
+			g.typeReferences = append(g.typeReferences, typeReference{
+				referencingDir:       referencingDir,
+				referencingType:      referencingTypeName,
+				referer:              referer,
+				referencingFieldName: referencingFieldName,
+				referencedType:       to.TypeName,
+				typeWrapper:          twNonNull,
+			})
 		}
 		return to
 	case *ast.List:
@@ -57,7 +61,7 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 			panic("received nonnamed")
 		}
 
-		if scalar := standardScalarFromNamedType(named); scalar != nil {
+		if scalar := standardBasicScalarFromNamedType(named); scalar != nil {
 			return graphql.NewList(scalar)
 		}
 
@@ -69,16 +73,18 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 		}
 
 		if referencingFieldName != "" && referencingTypeName != "" {
-			g.typeReferences[typeReference{
-				referenceringType: referencingTypeName,
-				referencingField:  referencingFieldName,
-				referencedType:    to.TypeName,
-				typeWrapper:       twList,
-			}] = struct{}{}
+			g.typeReferences = append(g.typeReferences, typeReference{
+				referencingDir:       referencingDir,
+				referencingType:      referencingTypeName,
+				referer:              referer,
+				referencingFieldName: referencingFieldName,
+				referencedType:       to.TypeName,
+				typeWrapper:          twList,
+			})
 		}
 		return to
 	case *ast.Named:
-		if scalar := standardScalarFromNamedType(x); scalar != nil {
+		if scalar := standardBasicScalarFromNamedType(x); scalar != nil {
 			return scalar
 		}
 
@@ -88,13 +94,16 @@ func (g *Graph) gqlOutputFromType(referencingTypeName, referencingFieldName stri
 		if _, exists := g.uninstantiatedTypes[to.TypeName]; !exists {
 			g.uninstantiatedTypes[to.TypeName] = to
 		}
+
 		if referencingFieldName != "" && referencingTypeName != "" {
-			g.typeReferences[typeReference{
-				referenceringType: referencingTypeName,
-				referencingField:  referencingFieldName,
-				referencedType:    to.TypeName,
-				typeWrapper:       twNone,
-			}] = struct{}{}
+			g.typeReferences = append(g.typeReferences, typeReference{
+				referencingDir:       referencingDir,
+				referencingType:      referencingTypeName,
+				referer:              referer,
+				referencingFieldName: referencingFieldName,
+				referencedType:       to.TypeName,
+				typeWrapper:          twNone,
+			})
 		}
 
 		return to

@@ -84,3 +84,7 @@ func (gf graphqlFile) Fields() ([]*FieldOutput, error) {
 
 	return fields, nil
 }
+
+func (graphqlFile) IsExec() bool {
+	return false
+}

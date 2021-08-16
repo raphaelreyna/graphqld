@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -29,27 +30,21 @@ func main() {
 	}
 	rootDir = os.Args[1]
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	g := graph.Graph{
 		Dir: rootDir,
 	}
 
-	if err := g.SynthesizeRootQueryConf(); err != nil {
-		panic(err)
-	}
-
-	if err := g.InstantiateTypesObjects(); err != nil {
-		panic(err)
-	}
-	g.SetTypes()
-	if err := g.Query.SetResolvers(); err != nil {
-		panic(err)
+	if err := g.Build(); err != nil {
+		log.Fatal(err)
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(g.Query.ObjectConf),
 	})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 
 	http.HandleFunc("/graphql", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -69,5 +64,5 @@ func main() {
 	if x := os.Getenv("PORT"); x != "" {
 		port = x
 	}
-	fmt.Println(http.ListenAndServe(":"+port, nil))
+	http.ListenAndServe(":"+port, nil)
 }
