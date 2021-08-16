@@ -3,6 +3,7 @@ package scan
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strconv"
@@ -74,7 +75,11 @@ func (od *ObjectDefinition) SetResolvers() error {
 			}
 			output, err := cmd.Output()
 			if err != nil {
-				return nil, err
+				exitErr, ok := err.(*exec.ExitError)
+				if !ok {
+					return nil, err
+				}
+				return nil, errors.New(string(exitErr.Stderr))
 			}
 
 			switch x := field.Type.(type) {
