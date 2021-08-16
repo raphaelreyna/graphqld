@@ -1,10 +1,13 @@
 package scan
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/textproto"
 	"os/exec"
 	"strconv"
 
@@ -80,6 +83,23 @@ func (od *ObjectDefinition) SetResolvers() error {
 					return nil, err
 				}
 				return nil, errors.New(string(exitErr.Stderr))
+			}
+
+			parts := bytes.SplitN(output, []byte("\n\n"), 2)
+			if len(parts) == 2 {
+				output = parts[1]
+				tpReader := textproto.NewReader(
+					bufio.NewReader(
+						bytes.NewReader(parts[0]),
+					),
+				)
+
+				header, err := tpReader.ReadMIMEHeader()
+				if err != nil && !errors.Is(err, io.EOF) {
+					return nil, err
+				}
+
+				fmt.Printf("found header: %+v\n", header)
 			}
 
 			switch x := field.Type.(type) {

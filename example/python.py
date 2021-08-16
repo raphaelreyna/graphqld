@@ -9,4 +9,5 @@ if __name__ == '__main__':
         if args[1] == "--cggi-fields":
             print("[\"python: String!\"]")
     else:
+        print("Test-Header: test-value\n\n", end="")
         print("Hello from python!", end="")
