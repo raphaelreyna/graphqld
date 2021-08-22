@@ -76,7 +76,6 @@ func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*objdef.Ob
 
 		fieldsOutput, err := scan.Scan(name, file)
 		if err != nil {
-			fmt.Printf("%T %+v\n", file, file)
 			return nil, fmt.Errorf(
 				"error reading fields from %s: %w",
 				execPath, err,

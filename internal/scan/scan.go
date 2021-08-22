@@ -8,13 +8,13 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/objdef"
 )
 
-func Scan(parent string, f File) (*FileFields, error) {
+func Scan(parent string, f File) (*FileContents, error) {
 	fields, err := f.Fields()
 	if err != nil {
 		return nil, err
 	}
 
-	return &FileFields{
+	return &FileContents{
 		Path:       f.Path(),
 		ParentName: parent,
 		Fields:     fields,
@@ -39,7 +39,7 @@ type FieldOutput struct {
 	Arguments []*ast.InputValueDefinition
 }
 
-type FileFields struct {
+type FileContents struct {
 	Path       string
 	ParentName string
 	Fields     []*FieldOutput
@@ -60,7 +60,7 @@ func NewFile(root string, info fs.FileInfo) (File, error) {
 
 	ext := filepath.Ext(info.Name())
 	if ext == ".gql" || ext == ".graphql" {
-		return graphqlFile{
+		return &GraphQLFile{
 			path: filepath.Join(root, info.Name()),
 		}, nil
 	}
