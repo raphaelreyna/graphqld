@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/graphql-go/graphql"
+	"github.com/raphaelreyna/graphqld/internal/objdef"
 	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
@@ -17,14 +18,14 @@ var (
 
 // buildObjectDefinitionForTypeObject looks for a directory named name in dir and scans it
 // for files that graphqld can use to build up the graph for the type named name.
-func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*scan.ObjectDefinition, error) {
+func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*objdef.ObjectDefinition, error) {
 	var (
 		fields    = []string{}
 		gqlFields = graphql.Fields{}
 
 		scriptsDir = filepath.Join(dir, name)
 
-		definition = scan.ObjectDefinition{
+		definition = objdef.ObjectDefinition{
 			ResolverPaths: make(map[string]string),
 			ObjectConf: graphql.ObjectConfig{
 				Name: name,

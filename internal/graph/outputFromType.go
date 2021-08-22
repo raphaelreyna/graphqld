@@ -13,8 +13,14 @@ func (g *Graph) gqlOutputFromType(referer interface{}, referencingDir, referenci
 			return graphql.String
 		case "Int":
 			return graphql.Int
+		case "Float":
+			return graphql.Float
 		case "Boolean":
 			return graphql.Boolean
+		case "ID":
+			return graphql.ID
+		case "DateTime":
+			return graphql.DateTime
 		default:
 			return nil
 		}

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/graphql-go/graphql/language/ast"
+	"github.com/raphaelreyna/graphqld/internal/objdef"
 )
 
 func Scan(parent string, f File) (*FileFields, error) {
@@ -20,7 +21,7 @@ func Scan(parent string, f File) (*FileFields, error) {
 	}, nil
 }
 
-func ScanForType(dir, parent, typeName string) (*ObjectDefinition, error) {
+func ScanForType(dir, parent, typeName string) (*objdef.ObjectDefinition, error) {
 	defer func() {
 		panic("unimplemented")
 	}()

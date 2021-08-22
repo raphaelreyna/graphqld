@@ -13,6 +13,7 @@ import (
 	"github.com/graphql-go/handler"
 	"github.com/radovskyb/watcher"
 	"github.com/raphaelreyna/graphqld/internal/graph"
+	httputil "github.com/raphaelreyna/graphqld/internal/transport/http"
 )
 
 func main() {
@@ -100,7 +101,7 @@ func main() {
 		}
 	}()
 
-	http.HandleFunc("/graphql", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.Handle("/graphql", httputil.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		opts := handler.NewRequestOptions(r)
 		lock.RLock()
 		result := graphql.Do(graphql.Params{
@@ -113,7 +114,7 @@ func main() {
 		lock.RUnlock()
 		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(result)
-	}))
+	})))
 
 	port := "8080"
 	if x := os.Getenv("PORT"); x != "" {

@@ -2,7 +2,7 @@ package graph
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/raphaelreyna/graphqld/internal/scan"
+	"github.com/raphaelreyna/graphqld/internal/objdef"
 )
 
 type Graph struct {
@@ -11,9 +11,9 @@ type Graph struct {
 	tm                  typeObjectMap
 	uninstantiatedTypes map[string]interface{}
 	typeReferences      []typeReference
-	objDefs             map[string]*scan.ObjectDefinition
+	objDefs             map[string]*objdef.ObjectDefinition
 
-	Query scan.ObjectDefinition
+	Query objdef.ObjectDefinition
 }
 
 type namerFielder interface {

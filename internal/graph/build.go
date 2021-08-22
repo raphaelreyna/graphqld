@@ -2,7 +2,7 @@ package graph
 
 import (
 	"github.com/graphql-go/graphql"
-	"github.com/raphaelreyna/graphqld/internal/scan"
+	"github.com/raphaelreyna/graphqld/internal/objdef"
 )
 
 func (g *Graph) Build() error {
@@ -19,7 +19,7 @@ func (g *Graph) Build() error {
 	// keep building referenced types as long as we have any
 	{
 		if g.objDefs == nil {
-			g.objDefs = make(map[string]*scan.ObjectDefinition)
+			g.objDefs = make(map[string]*objdef.ObjectDefinition)
 		}
 
 		var (
