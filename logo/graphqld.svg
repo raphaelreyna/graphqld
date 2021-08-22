@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="400"
+   height="150"
+   viewBox="0 0 105.83333 39.687501"
+   version="1.1"
+   id="svg8"
+   inkscape:version="1.0.1 (3bc2e813f5, 2020-09-07)"
+   sodipodi:docname="graphqld.svg">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="113.93528"
+     inkscape:cy="30.998529"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer3"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     units="px"
+     inkscape:window-width="2560"
+     inkscape:window-height="1016"
+     inkscape:window-x="0"
+     inkscape:window-y="562"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:groupmode="layer"
+     id="layer2"
+     inkscape:label="background" />
+  <g
+     inkscape:label="text"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:15.5222px;line-height:1.35;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.291041;"
+       x="25.565491"
+       y="24.479"
+       id="text13"><tspan
+         sodipodi:role="line"
+         id="tspan11"
+         x="25.565491"
+         y="24.479"
+         style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#e535ab;fill-opacity:1;stroke-width:0.291041">GraphQL<tspan
+   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000"
+   id="tspan928">[d]</tspan></tspan></text>
+  </g>
+  <g
+     inkscape:groupmode="layer"
+     id="layer3"
+     inkscape:label="graph">
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861"
+       cx="13.313174"
+       cy="8.0134525"
+       rx="0.93120652"
+       ry="0.90752369" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-8"
+       cx="7.027236"
+       cy="14.732008"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-9"
+       cx="19.955647"
+       cy="14.64304"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-3"
+       cx="2.4555695"
+       cy="22.889536"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-6"
+       cx="10.81863"
+       cy="22.890657"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-80"
+       cx="16.168839"
+       cy="22.924173"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-2"
+       cx="23.891479"
+       cy="22.854109"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-1"
+       cx="15.369686"
+       cy="30.753292"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <ellipse
+       style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
+       id="path861-0"
+       cx="6.9092436"
+       cy="30.922796"
+       rx="0.93120658"
+       ry="0.90752375" />
+    <path
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 2.4715392,22.841139 4.4691352,-8.029267 6.3420306,-6.8007611 6.668371,6.6439511 3.942715,8.125195"
+       id="path920" />
+    <path
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 6.9406744,14.811872 3.8806176,8.071007 -3.9618104,8.058028"
+       id="path922" />
+    <path
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 10.821292,22.882879 4.539413,7.910132"
+       id="path924" />
+    <path
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 19.951076,14.655062 -3.842441,8.326043"
+       id="path926" />
+  </g>
+</svg>
