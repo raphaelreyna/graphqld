@@ -1,4 +1,5 @@
-# graphqld
+![graphqld](https://raw.githubusercontent.com/raphaelreyna/graphqld/master/logo/graphqld.svg)
+# GraphQLd
 Do you miss being able to throw CGI scripts into an FTP server and call it a day?
 Is GraphQL the only thing holding you back from living in the past?
 
@@ -57,3 +58,10 @@ $ ./example/charCount.py --string hello
 
 Each executable is used as the resolver for the field it reports.
 Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAME}}.graphql` file.
+
+# Still missing...
+- support for defining input types
+- support for defining interfaces
+- support for defining enums
+- context
+- a lot of other things, this is still a pretty early stage project
