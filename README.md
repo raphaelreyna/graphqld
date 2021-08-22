@@ -1,4 +1,5 @@
-# graphqld
+![graphqld](https://raw.githubusercontent.com/raphaelreyna/graphqld/master/logo/graphqld.svg)
+# GraphQLd
 Do you miss being able to throw CGI scripts into an FTP server and call it a day?
 Is GraphQL the only thing holding you back from living in the past?
 
