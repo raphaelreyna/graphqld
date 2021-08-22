@@ -27,7 +27,7 @@
      inkscape:cx="113.93528"
      inkscape:cy="30.998529"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer3"
+     inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
      showgrid="false"
      units="px"
@@ -44,7 +44,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -58,15 +58,15 @@
      id="layer1">
     <text
        xml:space="preserve"
-       style="font-style:normal;font-weight:normal;font-size:15.5222px;line-height:1.35;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.291041;"
-       x="25.565491"
-       y="24.479"
+       style="font-style:normal;font-weight:normal;font-size:15.5222px;line-height:1.35;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.291041"
+       x="29.014431"
+       y="24.229338"
        id="text13"><tspan
          sodipodi:role="line"
          id="tspan11"
-         x="25.565491"
-         y="24.479"
-         style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#e535ab;fill-opacity:1;stroke-width:0.291041">GraphQL<tspan
+         x="29.014431"
+         y="24.229338"
+         style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#e535ab;fill-opacity:1;stroke-width:0.291041">graphql<tspan
    style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000"
    id="tspan928">[d]</tspan></tspan></text>
   </g>
@@ -77,81 +77,81 @@
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861"
-       cx="13.313174"
-       cy="8.0134525"
+       cx="15.269335"
+       cy="9.0032177"
        rx="0.93120652"
        ry="0.90752369" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-8"
-       cx="7.027236"
-       cy="14.732008"
+       cx="8.9833965"
+       cy="15.721773"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-9"
-       cx="19.955647"
-       cy="14.64304"
+       cx="21.911808"
+       cy="15.632805"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-3"
-       cx="2.4555695"
-       cy="22.889536"
+       cx="4.4117303"
+       cy="23.879301"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-6"
-       cx="10.81863"
-       cy="22.890657"
+       cx="12.774791"
+       cy="23.880423"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-80"
-       cx="16.168839"
-       cy="22.924173"
+       cx="18.125"
+       cy="23.913939"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-2"
-       cx="23.891479"
-       cy="22.854109"
+       cx="25.847641"
+       cy="23.843874"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-1"
-       cx="15.369686"
-       cy="30.753292"
+       cx="17.325848"
+       cy="31.743057"
        rx="0.93120658"
        ry="0.90752375" />
     <ellipse
        style="fill:#e535ab;fill-opacity:1;stroke-width:0.326089"
        id="path861-0"
-       cx="6.9092436"
-       cy="30.922796"
+       cx="8.8654041"
+       cy="31.912561"
        rx="0.93120658"
        ry="0.90752375" />
     <path
-       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 2.4715392,22.841139 4.4691352,-8.029267 6.3420306,-6.8007611 6.668371,6.6439511 3.942715,8.125195"
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 4.4276998,23.830904 4.4691352,-8.029267 6.342031,-6.8007609 6.668371,6.6439509 3.942715,8.125195"
        id="path920" />
     <path
-       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 6.9406744,14.811872 3.8806176,8.071007 -3.9618104,8.058028"
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 8.896835,15.801637 3.880618,8.071007 -3.9618108,8.058028"
        id="path922" />
     <path
-       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 10.821292,22.882879 4.539413,7.910132"
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 12.777453,23.872644 4.539413,7.910132"
        id="path924" />
     <path
-       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-       d="m 19.951076,14.655062 -3.842441,8.326043"
+       style="fill:none;stroke:#e535ab;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 21.907237,15.644827 18.064796,23.97087"
        id="path926" />
   </g>
 </svg>
