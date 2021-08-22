@@ -79,6 +79,8 @@ func newOutputParser(outputType graphql.Output) (outputParser, error) {
 		default:
 			return nil, fmt.Errorf("invalid output type: %T %+v", outputType, outputType)
 		}
+	case *graphql.List:
+		panic("TODO")
 	case *graphql.Scalar:
 		switch x {
 		case graphql.ID:
@@ -174,22 +176,51 @@ func newOutputParser(outputType graphql.Output) (outputParser, error) {
 func argStringFromValue(argConf *graphql.ArgumentConfig, name string, v interface{}) (string, error) {
 	switch x := argConf.Type.(type) {
 	case *graphql.NonNull:
-		switch x.OfType {
-		case graphql.String:
-			return v.(string), nil
-		default:
-			return "", fmt.Errorf(
-				"unsupported arg type: %T %+v", argConf.Type, argConf.Type,
-			)
+		switch x := x.OfType.(type) {
+		case *graphql.Scalar:
+			switch x {
+			case graphql.ID:
+				fallthrough
+			case graphql.String:
+				return v.(string), nil
+			case graphql.Int:
+				fallthrough
+			case graphql.Float:
+				fallthrough
+			case graphql.Boolean:
+				fallthrough
+			case graphql.DateTime:
+				return fmt.Sprintf("%v", v), nil
+			}
+		case *graphql.Object:
+			data, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			return string(data), nil
 		}
+	case *graphql.List:
+		panic("TODO")
 	case *graphql.Scalar:
 		switch argConf.Type {
+		case graphql.ID:
+			fallthrough
 		case graphql.String:
 			return v.(string), nil
+		case graphql.Int:
+			fallthrough
+		case graphql.Float:
+			fallthrough
+		case graphql.Boolean:
+			fallthrough
+		case graphql.DateTime:
+			return fmt.Sprintf("%v", v), nil
 		default:
-			return "", fmt.Errorf(
-				"unsupported arg type: %T %+v", argConf.Type, argConf.Type,
-			)
+			data, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			return string(data), nil
 		}
 	}
 
