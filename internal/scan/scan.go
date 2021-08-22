@@ -58,9 +58,14 @@ func NewFile(root string, info fs.FileInfo) (File, error) {
 		}, nil
 	}
 
-	return graphqlFile{
-		path: filepath.Join(root, info.Name()),
-	}, nil
+	ext := filepath.Ext(info.Name())
+	if ext == ".gql" || ext == ".graphql" {
+		return graphqlFile{
+			path: filepath.Join(root, info.Name()),
+		}, nil
+	}
+
+	return nil, nil
 }
 
 func isUserExec(info fs.FileInfo) bool {
