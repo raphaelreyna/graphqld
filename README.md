@@ -1,10 +1,9 @@
 ![graphqld](https://raw.githubusercontent.com/raphaelreyna/graphqld/master/logo/graphqld.svg)
-# GraphQLd
+# graphqld
 Do you miss being able to throw CGI scripts into an FTP server and call it a day?
 Is GraphQL the only thing holding you back from living in the past?
 
 If so, then try graphqld, the graphql "CGI" server.
-
 
 Still an experiment/poc.
 
