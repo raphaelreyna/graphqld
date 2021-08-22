@@ -1,11 +1,11 @@
 package intermediary
 
 type Input struct {
-	TypeName string
+	InputName string
 }
 
 func (i Input) Name() string {
-	return i.TypeName
+	return i.InputName
 }
 
 func (Input) Description() string {
