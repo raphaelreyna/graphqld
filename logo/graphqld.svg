@@ -67,8 +67,8 @@
          x="29.014431"
          y="24.229338"
          style="font-style:normal;font-variant:normal;font-weight:300;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Light';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#e535ab;fill-opacity:1;stroke-width:0.291041">graphql<tspan
-   style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:15.5222px;font-family:Rubik;-inkscape-font-specification:'Rubik, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000"
-   id="tspan928">[d]</tspan></tspan></text>
+   style="fill:#000000"
+   id="tspan33">{d}</tspan></tspan></text>
   </g>
   <g
      inkscape:groupmode="layer"
