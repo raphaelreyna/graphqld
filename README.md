@@ -21,7 +21,7 @@ type CharCountResponse {
   count: Int!
 }
  ```
-To serve up this graph on port 8000 with graphqld we create a directory with the following structure and run `PORT=8000 graphqld ./example`:
+To serve up this graph with graphqld we create a directory with the following structure and run `graphqld -f ./example/graphqld.yaml`:
 ```
 example
 ├── charCount.py

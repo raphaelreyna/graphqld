@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"net/http"
 	"os"
 	"sync"
@@ -11,28 +12,26 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 	"github.com/radovskyb/watcher"
+	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/raphaelreyna/graphqld/internal/graph"
 	httputil "github.com/raphaelreyna/graphqld/internal/transport/http"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	flag "github.com/spf13/pflag"
 )
 
 var (
-	rootDir    string
-	liveReload bool
+	configPath string
 )
 
 func init() {
-	flag.StringVarP(&rootDir, "root-dir", "d", "", "Will default to the current working directory.")
-	flag.BoolVarP(&liveReload, "live-graph", "l", false, "Set to true the graph will be rebuilt when a change is made in the root directory.")
+	flag.StringVar(&configPath, "f", "", "Path to configuration file.")
+	flag.Parse()
 }
 
 func main() {
-	flag.Parse()
-
 	var (
 		retCode = 1
+		c       *config.Conf
 		err     error
 	)
 
@@ -50,8 +49,29 @@ func main() {
 		os.Exit(retCode)
 	}()
 
-	if rootDir == "" {
-		rootDir, err = os.Getwd()
+	switch configPath {
+	case "":
+		c = &config.Conf{}
+		if err := c.Default(); err != nil {
+			log.Error().Err(err).
+				Msg("error creating default configuration")
+			return
+		}
+		log.Info().Interface("conf", *c).
+			Msg("using default configuration")
+	default:
+		c, err = config.ParseYamlFile(configPath)
+		if err != nil {
+			log.Error().Err(err).
+				Str("file", configPath).
+				Msg("error reading configuration")
+			return
+		}
+		log.Info().Interface("conf", *c).
+			Msg("finished loading configuration")
+	}
+
+	if c.RootDir == "" {
 		if err != nil {
 			log.Error().Err(err).
 				Msg("unable to obtain a root directory")
@@ -60,12 +80,12 @@ func main() {
 	}
 
 	g := graph.Graph{
-		Dir: rootDir,
+		Dir: c.RootDir,
 	}
 
 	if err := g.Build(); err != nil {
 		var logEvent *zerolog.Event
-		if liveReload {
+		if c.LiveReload {
 			logEvent = log.Error()
 		} else {
 			logEvent = log.Fatal()
@@ -83,7 +103,7 @@ func main() {
 	}
 
 	lock := sync.RWMutex{}
-	if liveReload {
+	if c.LiveReload {
 		w := watcher.New()
 		w.SetMaxEvents(1)
 		w.FilterOps(
@@ -97,7 +117,7 @@ func main() {
 				select {
 				case <-w.Event:
 					g := graph.Graph{
-						Dir: rootDir,
+						Dir: c.RootDir,
 					}
 
 					if err := g.Build(); err != nil {
@@ -160,7 +180,7 @@ func main() {
 		}
 	})))
 
-	if x := os.Getenv("GRAPHQLD_GRAPHIQL"); x != "" {
+	if c.Graphiql {
 		graphiqlServer, err := graphiql.NewGraphiqlHandler("/")
 		if err != nil {
 			log.Error().Err(err).
@@ -173,13 +193,8 @@ func main() {
 		log.Info().Msg("enabled graphiql")
 	}
 
-	port := "8080"
-	if x := os.Getenv("PORT"); x != "" {
-		port = x
-	}
-
 	log.Info().Msg("starting ...")
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+c.Port, nil); err != nil {
 		log.Error().Err(err).
 			Msg("error serving http")
 	}
