@@ -94,11 +94,11 @@ func (g *Graph) Build() error {
 
 	// finally we create a resolver for each field that needs one
 	{
-		if err := g.Query.SetResolvers(); err != nil {
+		if err := g.Query.SetResolvers(g.Dir); err != nil {
 			return err
 		}
 		for _, objDef := range g.objDefs {
-			if err := objDef.SetResolvers(); err != nil {
+			if err := objDef.SetResolvers(g.Dir); err != nil {
 				return err
 			}
 		}

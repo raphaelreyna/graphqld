@@ -16,7 +16,7 @@ type ObjectDefinition struct {
 // SetResolvers shall only be called after type objects have been reified.
 // SetResolvers creates resolvers reshape graphql arguments into a cli args list, call the appropriate resolver script,
 // and and reshape the output into whats expected at the graphql layer.
-func (od *ObjectDefinition) SetResolvers() error {
+func (od *ObjectDefinition) SetResolvers(root string) error {
 	var fields = od.ObjectConf.Fields.(graphql.FieldsThunk)()
 
 	for name, field := range fields {
@@ -24,7 +24,7 @@ func (od *ObjectDefinition) SetResolvers() error {
 			continue
 		}
 
-		resolverFn, err := resolver.NewFieldResolveFn(od.ResolverPaths[name], field)
+		resolverFn, err := resolver.NewFieldResolveFn(root, od.ResolverPaths[name], field)
 		if err != nil {
 			return fmt.Errorf(
 				"(*ObjectDefintion).SetResolvers:: error creating resolver for field %s: %w",

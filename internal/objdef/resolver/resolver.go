@@ -9,12 +9,13 @@ import (
 	"io"
 	"net/textproto"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/graphql-go/graphql"
 	"github.com/raphaelreyna/graphqld/internal/transport/http"
 )
 
-func NewFieldResolveFn(path string, field *graphql.Field) (graphql.FieldResolveFn, error) {
+func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldResolveFn, error) {
 	var (
 		takesArgs = 0 < len(field.Args)
 	)
@@ -24,6 +25,13 @@ func NewFieldResolveFn(path string, field *graphql.Field) (graphql.FieldResolveF
 		return nil, fmt.Errorf(
 			"NewFieldResolveFn:: error creating output parser for field %s: %w",
 			field.Name, err,
+		)
+	}
+
+	scriptName, err := filepath.Rel(root, path)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"NewFieldResolveFn:: unable to compute script_name env var: %w", err,
 		)
 	}
 
@@ -44,6 +52,12 @@ func NewFieldResolveFn(path string, field *graphql.Field) (graphql.FieldResolveF
 			}
 		}
 
+		env := http.GetEnv(p.Context)
+		env = append(env,
+			"SCRIPT_NAME="+scriptName,
+			"SCRIPT_FILENAME="+path,
+		)
+
 		cmd := exec.Command(path, args...)
 		if p.Source != nil {
 			source, err := json.Marshal(p.Source)
@@ -53,6 +67,9 @@ func NewFieldResolveFn(path string, field *graphql.Field) (graphql.FieldResolveF
 
 			cmd.Stdin = bytes.NewReader(source)
 		}
+
+		cmd.Env = env
+
 		output, err := cmd.Output()
 		if err != nil {
 			exitErr, ok := err.(*exec.ExitError)
@@ -76,10 +93,11 @@ func NewFieldResolveFn(path string, field *graphql.Field) (graphql.FieldResolveF
 				return nil, err
 			}
 
-			h := http.GetHeader(p.Context)
+			h := http.GetWHeader(p.Context)
 			for k := range header {
 				h.Add(k, header.Get(k))
 			}
+
 		}
 
 		return parseOutput(output)
