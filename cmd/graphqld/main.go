@@ -153,13 +153,19 @@ func main() {
 		})
 		lock.RUnlock()
 		w.Header().Add("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(result)
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Error().Err(err).
+				Interface("result", *result).
+				Msg("unable to encode result")
+		}
 	})))
 
 	if x := os.Getenv("GRAPHQLD_GRAPHIQL"); x != "" {
 		graphiqlServer, err := graphiql.NewGraphiqlHandler("/")
 		if err != nil {
-			panic(err)
+			log.Error().Err(err).
+				Msg("could not enable graphiql")
+			return
 		}
 
 		http.Handle("/graphiql", graphiqlServer)
@@ -173,5 +179,10 @@ func main() {
 	}
 
 	log.Info().Msg("starting ...")
-	http.ListenAndServe(":"+port, nil)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Error().Err(err).
+			Msg("error serving http")
+	}
+
+	retCode = 0
 }
