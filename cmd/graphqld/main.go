@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -15,92 +13,133 @@ import (
 	"github.com/radovskyb/watcher"
 	"github.com/raphaelreyna/graphqld/internal/graph"
 	httputil "github.com/raphaelreyna/graphqld/internal/transport/http"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	flag "github.com/spf13/pflag"
 )
 
+var (
+	rootDir    string
+	liveReload bool
+)
+
+func init() {
+	flag.StringVarP(&rootDir, "root-dir", "d", "", "Will default to the current working directory.")
+	flag.BoolVarP(&liveReload, "live-graph", "l", false, "Set to true the graph will be rebuilt when a change is made in the root directory.")
+}
+
 func main() {
+	flag.Parse()
+
 	var (
 		retCode = 1
-		rootDir string
+		err     error
 	)
+
+	if os.Getenv("DEV") != "" {
+		zerolog.SetGlobalLevel(-1)
+		log.Logger = log.Output(zerolog.ConsoleWriter{
+			Out: os.Stdout,
+		})
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println(r)
+			log.Error().Interface("recovered", r)
 		}
 		os.Exit(retCode)
 	}()
 
-	if len(os.Args) < 2 {
-		fmt.Println("no root dir given")
+	if rootDir == "" {
+		rootDir, err = os.Getwd()
+		if err != nil {
+			log.Error().Err(err).
+				Msg("unable to obtain a root directory")
+		}
 		return
 	}
-	rootDir = os.Args[1]
-
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	g := graph.Graph{
 		Dir: rootDir,
 	}
 
 	if err := g.Build(); err != nil {
-		log.Fatal(err)
+		var logEvent *zerolog.Event
+		if liveReload {
+			logEvent = log.Error()
+		} else {
+			logEvent = log.Fatal()
+		}
+		logEvent.Err(err).
+			Msg("unable to build graph schema config")
 	}
 
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: graphql.NewObject(g.Query.ObjectConf),
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Error().Err(err).
+			Msg("unable to build graph schema")
 	}
-
-	w := watcher.New()
-	w.SetMaxEvents(1)
-	w.FilterOps(
-		watcher.Rename, watcher.Move,
-		watcher.Create, watcher.Chmod,
-		watcher.Write,
-	)
 
 	lock := sync.RWMutex{}
-	go func() {
-		for {
-			select {
-			case <-w.Event:
-				g := graph.Graph{
-					Dir: rootDir,
+	if liveReload {
+		w := watcher.New()
+		w.SetMaxEvents(1)
+		w.FilterOps(
+			watcher.Rename, watcher.Move,
+			watcher.Create, watcher.Chmod,
+			watcher.Write,
+		)
+
+		go func() {
+			for {
+				select {
+				case <-w.Event:
+					g := graph.Graph{
+						Dir: rootDir,
+					}
+
+					if err := g.Build(); err != nil {
+						log.Error().Err(err).
+							Msg("unable to rebuild graph schema config")
+						continue
+					}
+
+					schm, err := graphql.NewSchema(graphql.SchemaConfig{
+						Query: graphql.NewObject(g.Query.ObjectConf),
+					})
+					if err != nil {
+						log.Error().Err(err).
+							Msg("unable to rebuild schema")
+						continue
+					}
+
+					lock.Lock()
+					schema = schm
+					lock.Unlock()
+
+					log.Info().Msg("rebuild schema")
+				case err := <-w.Error:
+					log.Fatal().Err(err).
+						Msg("unable to watch root directory")
+				case <-w.Closed:
+					return
 				}
-
-				if err := g.Build(); err != nil {
-					log.Fatal(err)
-				}
-
-				schm, err := graphql.NewSchema(graphql.SchemaConfig{
-					Query: graphql.NewObject(g.Query.ObjectConf),
-				})
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				lock.Lock()
-				schema = schm
-				lock.Unlock()
-				fmt.Println("updated schema")
-
-			case err := <-w.Error:
-				log.Fatalln(err)
-			case <-w.Closed:
-				return
 			}
-		}
-	}()
+		}()
 
-	if err := w.AddRecursive(g.Dir); err != nil {
-		log.Fatalln(err)
-	}
-	go func() {
-		if err := w.Start(time.Second); err != nil {
-			log.Fatalln(err)
+		if err := w.AddRecursive(g.Dir); err != nil {
+			log.Fatal().Err(err).
+				Msg("unable to recursvely watch root directory")
 		}
-	}()
+		go func() {
+			if err := w.Start(time.Second); err != nil {
+				log.Fatal().Err(err).
+					Msg("error watching root directory")
+			}
+		}()
+	}
 
 	http.Handle("/", httputil.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		opts := handler.NewRequestOptions(r)
@@ -117,19 +156,22 @@ func main() {
 		json.NewEncoder(w).Encode(result)
 	})))
 
-	if x := os.Getenv("GRAPHQLD_GRAPHIQL"); x == "TRUE" {
+	if x := os.Getenv("GRAPHQLD_GRAPHIQL"); x != "" {
 		graphiqlServer, err := graphiql.NewGraphiqlHandler("/")
 		if err != nil {
 			panic(err)
 		}
 
 		http.Handle("/graphiql", graphiqlServer)
+
+		log.Info().Msg("enabled graphiql")
 	}
 
 	port := "8080"
 	if x := os.Getenv("PORT"); x != "" {
 		port = x
 	}
-	fmt.Println("starting...")
+
+	log.Info().Msg("starting ...")
 	http.ListenAndServe(":"+port, nil)
 }
