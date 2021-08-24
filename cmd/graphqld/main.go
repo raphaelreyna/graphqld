@@ -51,12 +51,7 @@ func main() {
 
 	switch configPath {
 	case "":
-		c = &config.Conf{}
-		if err := c.Default(); err != nil {
-			log.Error().Err(err).
-				Msg("error creating default configuration")
-			return
-		}
+		c = config.ParseFromEnv()
 		log.Info().Interface("conf", *c).
 			Msg("using default configuration")
 	default:
@@ -85,7 +80,7 @@ func main() {
 
 	if err := g.Build(); err != nil {
 		var logEvent *zerolog.Event
-		if c.LiveReload {
+		if c.HotReload {
 			logEvent = log.Error()
 		} else {
 			logEvent = log.Fatal()
@@ -103,7 +98,7 @@ func main() {
 	}
 
 	lock := sync.RWMutex{}
-	if c.LiveReload {
+	if c.HotReload {
 		w := watcher.New()
 		w.SetMaxEvents(1)
 		w.FilterOps(

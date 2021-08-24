@@ -10,6 +10,10 @@ RUN apt update \
     && apt-get upgrade -y -o Dpkg::Options::="--force-confold" \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN mkdir -p /var/graphqld
+
 COPY --from=build-stage /graphqld/graphqld /bin/graphqld
+
 VOLUME ["/var/graphqld"]
-CMD ["graphqld", "/var/graphqld"]
+EXPOSE 80
+
+ENTRYPOINT ["graphqld"]

@@ -1,5 +1,5 @@
 RootDir: "./example"
-LiveReload: true
+HotReload: true
 Dir: "."
 GraphiQL: true
 Port: "8080"

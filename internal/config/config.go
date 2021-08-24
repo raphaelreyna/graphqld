@@ -7,11 +7,11 @@ import (
 )
 
 type Conf struct {
-	RootDir    string `yaml:"RootDir"`
-	LiveReload bool   `yaml:"LiveReload"`
-	Dir        string `yaml:"Dir"`
-	Graphiql   bool   `yaml:"GraphiQL"`
-	Port       string `yaml:"Port"`
+	RootDir   string `yaml:"RootDir"`
+	HotReload bool   `yaml:"HotReload"`
+	Dir       string `yaml:"Dir"`
+	Graphiql  bool   `yaml:"GraphiQL"`
+	Port      string `yaml:"Port"`
 }
 
 func ParseYamlFile(path string) (*Conf, error) {
@@ -30,17 +30,51 @@ func ParseYamlFile(path string) (*Conf, error) {
 	return &c, nil
 }
 
-func (c *Conf) Default() error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
+func ParseFromEnv() *Conf {
+	var (
+		c = Conf{
+			RootDir: os.Getenv("GRAPHQLD_ROOT_DIR"),
+			Dir:     os.Getenv("GRAPHQLD_DIR"),
+			Port:    os.Getenv("GRAPHQLD_PORT"),
+		}
+
+		defConf = Conf{}
+	)
+
+	switch x := os.Getenv("GRAPHQLD_HOT_RELOAD"); x {
+	case "":
+		c.HotReload = false
+	default:
+		c.HotReload = true
 	}
 
+	switch x := os.Getenv("GRAPHQLD_GRAPHIQL"); x {
+	case "":
+		c.Graphiql = false
+	default:
+		c.Graphiql = true
+	}
+
+	defConf.Default()
+	if c.RootDir == "" {
+		c.RootDir = defConf.RootDir
+	}
+
+	if c.Dir == "" {
+		c.Dir = defConf.Dir
+	}
+
+	if c.Port == "" {
+		c.Port = defConf.Port
+	}
+
+	return &c
+}
+
+func (c *Conf) Default() {
 	c.RootDir = "/var/graphqld"
-	c.LiveReload = false
-	c.Dir = home
+	c.HotReload = false
+	c.Dir = "/"
 	c.Graphiql = false
 	c.Port = "80"
-
-	return nil
 }
