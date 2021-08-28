@@ -1,10 +1,12 @@
 package graph
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/graphql-go/graphql"
 	"github.com/raphaelreyna/graphqld/internal/objdef"
+	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
 func (g *Graph) Build() error {
@@ -51,6 +53,47 @@ func (g *Graph) Build() error {
 
 		// lets get our type references back
 		g.typeReferences = processedTypeReferences
+	}
+
+	// Read all of the referenced input configs from the root dir
+	{
+		for _, ir := range g.inputReferences {
+			var (
+				dir       = filepath.Join(ir.referencingDir, ir.referencedInput)
+				filePath  = filepath.Join(dir, ir.referencedInput+".graphql")
+				inputName = ir.referencedInput
+			)
+
+			info, err := os.Stat(filePath)
+			if err != nil {
+				return err
+			}
+
+			file, err := scan.NewFile(dir, info)
+			if err != nil {
+				return err
+			}
+
+			contents, err := scan.Scan(inputName, file)
+			if err != nil {
+				return err
+			}
+
+			fm := make(graphql.InputObjectConfigFieldMap)
+
+			for _, iField := range contents.Input.Fields {
+				fm[iField.Name.Value] = &graphql.InputObjectFieldConfig{
+					Type: g.gqlInputFromType(ir, iField.Type),
+				}
+			}
+
+			ic := g.inputConfs[ir.key(inputName)]
+			ic.Fields = graphql.InputObjectConfigFieldMapThunk(
+				func() graphql.InputObjectConfigFieldMap {
+					return fm
+				},
+			)
+		}
 	}
 
 	// now that we have all of the type object definitions, we need to instantiate the input objects
@@ -116,8 +159,6 @@ func (g *Graph) Build() error {
 			delete(g.uninstantiatedTypes, name)
 		}
 	}
-
-	fmt.Printf("instantiated objects")
 
 	// now that we instantiated all of our type objects, we need to make sure that
 	// pointers pointing to intermediary type objects are set to point to the "real" type object

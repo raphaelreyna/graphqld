@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"fmt"
 	"io/fs"
 	"path/filepath"
 
@@ -9,16 +10,35 @@ import (
 )
 
 func Scan(parent string, f File) (*FileContents, error) {
-	fields, err := f.Fields()
-	if err != nil {
-		return nil, err
+	switch x := f.(type) {
+	case execFile:
+		fields, err := x.Fields()
+		if err != nil {
+			return nil, err
+		}
+
+		return &FileContents{
+			Path:       f.Path(),
+			ParentName: parent,
+			Fields:     fields,
+		}, nil
+	case *GraphQLFile:
+		if err := x.scan(); err != nil {
+			return nil, err
+		}
+
+		fields, _ := x.Fields()
+		inputs, _ := x.Input()
+
+		return &FileContents{
+			Path:       x.Path(),
+			ParentName: parent,
+			Fields:     fields,
+			Input:      inputs,
+		}, nil
 	}
 
-	return &FileContents{
-		Path:       f.Path(),
-		ParentName: parent,
-		Fields:     fields,
-	}, nil
+	return nil, fmt.Errorf("invalid file type: %T", f)
 }
 
 func ScanForType(dir, parent, typeName string) (*objdef.ObjectDefinition, error) {
@@ -43,6 +63,7 @@ type FileContents struct {
 	Path       string
 	ParentName string
 	Fields     []*FieldOutput
+	Input      *ast.InputObjectDefinition
 }
 
 type File interface {

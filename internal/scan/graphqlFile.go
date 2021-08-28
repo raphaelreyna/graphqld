@@ -33,7 +33,7 @@ func (gf *GraphQLFile) Fields() ([]*FieldOutput, error) {
 	}
 
 	if len(gf.objects) == 0 {
-		return nil, ErrNoFields
+		return nil, nil
 	}
 
 	fields := []*FieldOutput{}
@@ -58,7 +58,7 @@ func (gf *GraphQLFile) Input() (*ast.InputObjectDefinition, error) {
 	}
 
 	if len(gf.inputs) == 0 {
-		return nil, ErrNoInputs
+		return nil, nil
 	}
 
 	return gf.inputs[0], nil

@@ -222,7 +222,13 @@ func argStringFromValue(argConf *graphql.ArgumentConfig, name string, v interfac
 			}
 			return string(data), nil
 		}
+	default:
+		data, err := json.Marshal(v)
+		if err != nil {
+			return "", err
+		}
+		return string(data), nil
 	}
 
-	return "", fmt.Errorf("internal/scan argStringFromValue:: invalid arg: %+v", v)
+	return "", fmt.Errorf("internal/objdef argStringFromValue:: invalid arg: %T", v)
 }
