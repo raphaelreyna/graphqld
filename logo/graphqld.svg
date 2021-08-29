@@ -18,7 +18,7 @@
      id="defs2" />
    <style type="text/css">
       @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300');
-      .rubik{font-family:'Rubik';}
+      .rubik{font-family:'Rubik', sans-serif;}
    </style>
   <sodipodi:namedview
      id="base"
