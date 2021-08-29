@@ -31,9 +31,21 @@ example
 └── python.py
 ```
 
+See [the example directory](https://github.com/raphaelreyna/graphqld/tree/master/example/graph) to check out examples of these scripts.
 
-See [the example directory](https://github.com/raphaelreyna/graphqld/tree/master/example) to check out examples of these scripts.
 
+# Contexts
+While full blown support for contexts including passing around functions and objects is tricky (thoughts/suggestions are welcome!).
+
+
+What is currently supported is a static JSON context.
+If the `GRAPHQLD_CTX_EXEC` env var points to an executable, that executble will be ran at the beginning of every request, before graph resolution happens. Its output will be copied into a file which will be made available to each resolver at `/dev/fd/3`. The HTTP header from the incoming request will be made available to this context providing executable, just as with CGI.
+
+
+This at least allows for some level of auth.
+
+
+See [the example auth python script](https://github.com/raphaelreyna/graphqld/tree/master/example/graph) to check out example of a context providing executable.
 
 # How it works
 The graph is built scanning the given directory and querying each executable for its fields:
@@ -61,5 +73,4 @@ Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAM
 # Still missing...
 - support for defining interfaces
 - support for defining enums
-- context
 - a lot of other things, this is still a pretty early stage project
