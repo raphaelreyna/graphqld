@@ -1,19 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"net/http"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/friendsofgo/graphiql"
 	"github.com/graphql-go/graphql"
-	"github.com/graphql-go/handler"
-	"github.com/radovskyb/watcher"
 	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/raphaelreyna/graphqld/internal/graph"
+	"github.com/raphaelreyna/graphqld/internal/reload"
 	httputil "github.com/raphaelreyna/graphqld/internal/transport/http"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -74,6 +69,14 @@ func main() {
 		return
 	}
 
+	server := httputil.Server{}
+	server.Schema = make(chan graphql.Schema, 1)
+	server.Addr = ":" + c.Port
+
+	if c.Graphiql {
+		server.GraphiQL = "/graphiql"
+	}
+
 	g := graph.Graph{
 		Dir: c.RootDir,
 	}
@@ -87,109 +90,31 @@ func main() {
 		}
 		logEvent.Err(err).
 			Msg("unable to build graph schema config")
-	}
-
-	schema, err := graphql.NewSchema(graphql.SchemaConfig{
-		Query: graphql.NewObject(g.Query.ObjectConf),
-	})
-	if err != nil {
-		log.Error().Err(err).
-			Msg("unable to build graph schema")
-	}
-
-	lock := sync.RWMutex{}
-	if c.HotReload {
-		w := watcher.New()
-		w.SetMaxEvents(1)
-		w.FilterOps(
-			watcher.Rename, watcher.Move,
-			watcher.Create, watcher.Chmod,
-			watcher.Write,
-		)
-
-		go func() {
-			for {
-				select {
-				case <-w.Event:
-					g := graph.Graph{
-						Dir: c.RootDir,
-					}
-
-					if err := g.Build(); err != nil {
-						log.Error().Err(err).
-							Msg("unable to rebuild graph schema config")
-						continue
-					}
-
-					schm, err := graphql.NewSchema(graphql.SchemaConfig{
-						Query: graphql.NewObject(g.Query.ObjectConf),
-					})
-					if err != nil {
-						log.Error().Err(err).
-							Msg("unable to rebuild schema")
-						continue
-					}
-
-					lock.Lock()
-					schema = schm
-					lock.Unlock()
-
-					log.Info().Msg("rebuild schema")
-				case err := <-w.Error:
-					log.Fatal().Err(err).
-						Msg("unable to watch root directory")
-				case <-w.Closed:
-					return
-				}
-			}
-		}()
-
-		if err := w.AddRecursive(g.Dir); err != nil {
-			log.Fatal().Err(err).
-				Msg("unable to recursvely watch root directory")
-		}
-		go func() {
-			if err := w.Start(time.Second); err != nil {
-				log.Fatal().Err(err).
-					Msg("error watching root directory")
-			}
-		}()
-	}
-
-	http.Handle("/", httputil.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		opts := handler.NewRequestOptions(r)
-		lock.RLock()
-		result := graphql.Do(graphql.Params{
-			Schema:         schema,
-			RequestString:  opts.Query,
-			VariableValues: opts.Variables,
-			OperationName:  opts.OperationName,
-			Context:        r.Context(),
+	} else {
+		schema, err := graphql.NewSchema(graphql.SchemaConfig{
+			Query: graphql.NewObject(g.Query.ObjectConf),
 		})
-		lock.RUnlock()
-		w.Header().Add("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(result); err != nil {
-			log.Error().Err(err).
-				Interface("result", *result).
-				Msg("unable to encode result")
-		}
-	})))
-
-	if c.Graphiql {
-		graphiqlServer, err := graphiql.NewGraphiqlHandler("/")
 		if err != nil {
 			log.Error().Err(err).
-				Msg("could not enable graphiql")
-			return
+				Msg("unable to build graph schema")
 		}
 
-		http.Handle("/graphiql", graphiqlServer)
+		server.Schema <- schema
+	}
 
-		log.Info().Msg("enabled graphiql")
+	if c.HotReload {
+		w := reload.Watcher{
+			RootDir:  c.RootDir,
+			Interval: time.Second,
+			Schema:   server.Schema,
+			ServerMu: &server.RWMutex,
+		}
+
+		go w.Run()
 	}
 
 	log.Info().Msg("starting ...")
-	if err := http.ListenAndServe(":"+c.Port, nil); err != nil {
+	if err := server.Run(); err != nil {
 		log.Error().Err(err).
 			Msg("error serving http")
 	}

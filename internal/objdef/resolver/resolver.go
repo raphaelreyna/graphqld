@@ -8,11 +8,18 @@ import (
 	"fmt"
 	"io"
 	"net/textproto"
+	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/graphql-go/graphql"
 	"github.com/raphaelreyna/graphqld/internal/transport/http"
+)
+
+type key uint
+
+const (
+	ctxKey key = iota
 )
 
 func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldResolveFn, error) {
@@ -52,12 +59,6 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldRe
 			}
 		}
 
-		env := http.GetEnv(p.Context)
-		env = append(env,
-			"SCRIPT_NAME="+scriptName,
-			"SCRIPT_FILENAME="+path,
-		)
-
 		cmd := exec.Command(path, args...)
 		if p.Source != nil {
 			source, err := json.Marshal(p.Source)
@@ -68,7 +69,16 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldRe
 			cmd.Stdin = bytes.NewReader(source)
 		}
 
+		env := http.GetEnv(p.Context)
+		env = append(env,
+			"SCRIPT_NAME="+scriptName,
+			"SCRIPT_FILENAME="+path,
+		)
 		cmd.Env = env
+
+		if ctxFile, ok := p.Context.Value(ctxKey).(*os.File); ok {
+			cmd.ExtraFiles = []*os.File{ctxFile}
+		}
 
 		output, err := cmd.Output()
 		if err != nil {
@@ -97,7 +107,6 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldRe
 			for k := range header {
 				h.Add(k, header.Get(k))
 			}
-
 		}
 
 		return parseOutput(output)
