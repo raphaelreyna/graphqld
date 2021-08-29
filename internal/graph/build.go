@@ -11,16 +11,6 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
-func newThunk(fm graphql.InputObjectConfigFieldMap) graphql.InputObjectConfigFieldMapThunk {
-	return func() graphql.InputObjectConfigFieldMap {
-		return fm
-	}
-}
-
-func newF(i int) func(i int) int {
-	return func(i int) int { return i }
-}
-
 func (g *Graph) Build() error {
 	// build object definition for root query object
 	{
