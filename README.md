@@ -45,7 +45,7 @@ If the `GRAPHQLD_CTX_EXEC` env var points to an executable, that executble will 
 This at least allows for some level of auth.
 
 
-See [the example auth python script](https://github.com/raphaelreyna/graphqld/tree/master/example/graph) to check out example of a context providing executable.
+See [the example auth python script](https://github.com/raphaelreyna/graphqld/tree/master/example/auth.py) to check out example of a context providing executable.
 
 # How it works
 The graph is built scanning the given directory and querying each executable for its fields:
