@@ -30,7 +30,7 @@ func (g *Graph) gqlOutputFromType(referer interface{}, referencingDir, referenci
 		g.uninstantiatedTypes = make(map[string]interface{})
 	}
 	if g.typeReferences == nil {
-		g.typeReferences = make([]typeReference, 0)
+		g.typeReferences = make([]*typeReference, 0)
 	}
 
 	switch x := t.(type) {
@@ -51,7 +51,7 @@ func (g *Graph) gqlOutputFromType(referer interface{}, referencingDir, referenci
 			g.uninstantiatedTypes[to.TypeName] = to
 		}
 		if referencingFieldName != "" && referencingTypeName != "" {
-			g.typeReferences = append(g.typeReferences, typeReference{
+			g.typeReferences = append(g.typeReferences, &typeReference{
 				referencingDir:       referencingDir,
 				referencingType:      referencingTypeName,
 				referer:              referer,
@@ -79,7 +79,7 @@ func (g *Graph) gqlOutputFromType(referer interface{}, referencingDir, referenci
 		}
 
 		if referencingFieldName != "" && referencingTypeName != "" {
-			g.typeReferences = append(g.typeReferences, typeReference{
+			g.typeReferences = append(g.typeReferences, &typeReference{
 				referencingDir:       referencingDir,
 				referencingType:      referencingTypeName,
 				referer:              referer,
@@ -102,7 +102,7 @@ func (g *Graph) gqlOutputFromType(referer interface{}, referencingDir, referenci
 		}
 
 		if referencingFieldName != "" && referencingTypeName != "" {
-			g.typeReferences = append(g.typeReferences, typeReference{
+			g.typeReferences = append(g.typeReferences, &typeReference{
 				referencingDir:       referencingDir,
 				referencingType:      referencingTypeName,
 				referer:              referer,

@@ -1,13 +1,33 @@
 package graph
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/graphql-go/graphql"
+	"github.com/raphaelreyna/graphqld/internal/intermediary"
 	"github.com/raphaelreyna/graphqld/internal/objdef"
+	"github.com/raphaelreyna/graphqld/internal/scan"
 )
+
+func newThunk(fm graphql.InputObjectConfigFieldMap) graphql.InputObjectConfigFieldMapThunk {
+	return func() graphql.InputObjectConfigFieldMap {
+		return fm
+	}
+}
+
+func newF(i int) func(i int) int {
+	return func(i int) int { return i }
+}
 
 func (g *Graph) Build() error {
 	// build object definition for root query object
 	{
+		if g.inputConfs == nil {
+			g.inputConfs = make(map[string]*graphql.InputObjectConfig)
+		}
+
 		def, err := g.buildObjectDefinitionForTypeObject(g.Dir, "query")
 		if err != nil {
 			return err
@@ -24,7 +44,7 @@ func (g *Graph) Build() error {
 
 		var (
 			count                   = len(g.typeReferences)
-			processedTypeReferences = make([]typeReference, 0)
+			processedTypeReferences = make([]*typeReference, 0)
 		)
 		for 0 < count {
 			var tr = g.typeReferences[0]
@@ -47,10 +67,141 @@ func (g *Graph) Build() error {
 		g.typeReferences = processedTypeReferences
 	}
 
+	// Read all of the referenced input configs from the root dir
+	{
+		var (
+			count                    = len(g.inputReferences)
+			processedInputReferences = make([]*inputReference, 0)
+		)
+		for 0 < count {
+			var (
+				ir = g.inputReferences[0]
+
+				dir       = ir.dir()
+				filePath  = filepath.Join(dir, ir.referencedInput+".graphql")
+				inputName = ir.referencedInput
+
+				key = ir.key(inputName)
+
+				ic = g.inputConfs[key]
+			)
+
+			// put this type reference into the pile of processed ones
+			// and remove it from the ones we still need to work on
+			processedInputReferences = append(processedInputReferences, ir)
+			g.inputReferences = g.inputReferences[1:]
+
+			// Grab contents from file system
+			info, err := os.Stat(filePath)
+			if err != nil {
+				return err
+			}
+			file, err := scan.NewFile(dir, info)
+			if err != nil {
+				return err
+			}
+			contents, err := scan.Scan(inputName, file)
+			if err != nil {
+				return err
+			}
+
+			if ic == nil {
+				ic = &graphql.InputObjectConfig{
+					Name: inputName,
+				}
+				g.inputConfs[key] = ic
+			}
+
+			func(ic *graphql.InputObjectConfig) {
+				fm := make(graphql.InputObjectConfigFieldMap)
+				ic.Fields = fm
+
+				for _, iField := range contents.Input.Fields {
+					fm[iField.Name.Value] = &graphql.InputObjectFieldConfig{
+						Type: g.gqlInputFromType(&inputReference{
+							referencingDir:       ir.referencingDir,
+							referencingType:      ir.referencingType,
+							referencingFieldName: ir.referencingFieldName,
+							referencingArgName:   ir.referencingArgName,
+							referencedInput:      ir.referencedInput,
+							referer:              ic,
+						}, iField.Type),
+					}
+				}
+			}(ic)
+
+			count = len(g.inputReferences)
+		}
+
+		// lets get our input references back
+		g.inputReferences = processedInputReferences
+	}
+
+	// now that we have all of the type object definitions, we need to instantiate the input objects
+	{
+		if g.im == nil {
+			g.im = make(map[string]graphql.Input)
+		}
+
+		for name := range g.uninstantiatedInputs {
+			conf, ok := g.inputConfs[name]
+			if !ok {
+				panic(fmt.Sprintf("could not find input config for %s", name))
+			}
+
+			g.im[name] = graphql.NewInputObject(*conf)
+
+			delete(g.uninstantiatedInputs, name)
+		}
+	}
+
+	// now that we instantiated all of our input objects, we need to make sure that
+	// pointers pointing to intermediary input objects are set to point to the "real" type object
+	{
+		for _, ir := range g.inputReferences {
+			key := ir.key(ir.referencedInput)
+			switch referer := ir.referer.(type) {
+			case *graphql.Field:
+				switch ir.inputWrapper {
+				case twList:
+					referer.Type = graphql.NewList(g.im[key])
+				case twNonNull:
+					referer.Type = graphql.NewNonNull(g.im[key])
+				case twNone:
+					referer.Type = g.im[key]
+				}
+			case *graphql.ArgumentConfig:
+				switch ir.inputWrapper {
+				case twList:
+					referer.Type = graphql.NewList(g.im[key])
+				case twNonNull:
+					referer.Type = graphql.NewNonNull(g.im[key])
+				case twNone:
+					referer.Type = g.im[key]
+				}
+			case *graphql.InputObjectConfig:
+				fm := referer.Fields.(graphql.InputObjectConfigFieldMap)
+				for _, f := range fm {
+					if !intermediary.IsIntermediary(f.Type) {
+						continue
+					}
+					switch ir.inputWrapper {
+					case twList:
+						f.Type = graphql.NewList(g.im[key])
+					case twNonNull:
+						f.Type = graphql.NewNonNull(g.im[key])
+					case twNone:
+						f.Type = g.im[key]
+					}
+				}
+			}
+		}
+	}
+
 	// now that we have all of the type object definitions, we need to instantiate them
 	{
 		if len(g.tm) == 0 {
-			g.tm = make(typeObjectMap)
+			g.tm = make(map[string]*graphql.Object)
 		}
 
 		for name := range g.uninstantiatedTypes {

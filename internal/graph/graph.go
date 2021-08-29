@@ -1,6 +1,10 @@
 package graph
 
 import (
+	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/graphql-go/graphql"
 	"github.com/raphaelreyna/graphqld/internal/objdef"
 )
@@ -8,24 +12,18 @@ import (
 type Graph struct {
 	Dir string
 
-	tm                  typeObjectMap
+	tm                  map[string]*graphql.Object
 	uninstantiatedTypes map[string]interface{}
-	typeReferences      []typeReference
-	objDefs             map[string]*objdef.ObjectDefinition
+	typeReferences      []*typeReference
+
+	im                   map[string]graphql.Input
+	uninstantiatedInputs map[string]interface{}
+	inputReferences      []*inputReference
+
+	objDefs    map[string]*objdef.ObjectDefinition
+	inputConfs map[string]*graphql.InputObjectConfig
 
 	Query objdef.ObjectDefinition
-}
-
-type namerFielder interface {
-	TypeName() string
-	TypeFields() graphql.Fields
-}
-
-// typeObjectMap maps type names to their type object singletons.
-type typeObjectMap map[string]*graphql.Object
-
-func (tm typeObjectMap) TypeOf(tf namerFielder) *graphql.Object {
-	return tm[tf.TypeName()]
 }
 
 type typeWrapper uint
@@ -43,4 +41,42 @@ type typeReference struct {
 	referer              interface{}
 	referencedType       string
 	typeWrapper          typeWrapper
+}
+
+type inputWrapper uint
+
+const (
+	iwNone = iota
+	iwNonNull
+	iwList
+)
+
+type inputReference struct {
+	referencingDir       string
+	referencingType      string
+	referencingFieldName string
+	referencingArgName   string
+	referer              interface{}
+	referencedInput      string
+	inputStack           string
+	inputWrapper         inputWrapper
+}
+
+func (ir *inputReference) key(name string) string {
+	return fmt.Sprintf(
+		"@%s::%s::%s::%s",
+		ir.referencingType, ir.referencingFieldName,
+		ir.referencingArgName, ir.inputStack+name,
+	)
+}
+
+func (ir *inputReference) dir() string {
+	var s = ir.referencingDir
+
+	stack := strings.Split(ir.inputStack, ":")
+	for _, input := range stack {
+		s = filepath.Join(s, input)
+	}
+
+	return filepath.Join(s, ir.referencedInput)
 }

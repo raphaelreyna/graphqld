@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/graphql-go/graphql"
+	"github.com/raphaelreyna/graphqld/internal/intermediary"
 	"github.com/raphaelreyna/graphqld/internal/objdef"
 	"github.com/raphaelreyna/graphqld/internal/scan"
 )
@@ -76,7 +77,10 @@ func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*objdef.Ob
 
 		fieldsOutput, err := scan.Scan(name, file)
 		if err != nil {
-			fmt.Printf("%T %+v\n", file, file)
+			if errors.Is(err, scan.ErrNoFields) {
+				continue
+			}
+
 			return nil, fmt.Errorf(
 				"error reading fields from %s: %w",
 				execPath, err,
@@ -87,14 +91,41 @@ func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*objdef.Ob
 			gqlField := graphql.Field{
 				Name: fieldOutput.Name,
 			}
-			gqlField.Type = g.gqlOutputFromType(&gqlField, scriptsDir, name, fieldOutput.Name, fieldOutput.Type)
+			gqlField.Type = g.gqlOutputFromType(
+				&gqlField, scriptsDir, name,
+				fieldOutput.Name, fieldOutput.Type,
+			)
 
 			if args := fieldOutput.Arguments; 0 < len(args) {
-				arguments := graphql.FieldConfigArgument{}
+				var arguments = make(graphql.FieldConfigArgument)
 
 				for _, arg := range args {
-					argConf := graphql.ArgumentConfig{}
-					argConf.Type = g.gqlOutputFromType(&argConf, dir, name, fieldOutput.Name, arg.Type)
+					var (
+						argConf   graphql.ArgumentConfig
+						reference = inputReference{
+							referencingDir:       dir,
+							referencingType:      name,
+							referencingFieldName: fieldOutput.Name,
+							referencingArgName:   arg.Name.Value,
+							referer:              &argConf,
+						}
+					)
+
+					if arg.Description != nil {
+						argConf.Description = arg.Description.Value
+					}
+					if arg.DefaultValue != nil {
+						argConf.DefaultValue = arg.DefaultValue.GetValue()
+					}
+					argConf.Type = g.gqlInputFromType(&reference, arg.Type)
+
+					if intermediary.IsIntermediary(argConf.Type) {
+						inputName := argConf.Type.Name()
+						g.inputConfs[reference.key(inputName)] = &graphql.InputObjectConfig{
+							Name: inputName,
+						}
+					}
+
 					arguments[arg.Name.Value] = &argConf
 				}
 

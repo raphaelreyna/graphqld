@@ -31,3 +31,35 @@ func (ListType) Error() error {
 
 	return nil
 }
+
+type ListInput struct {
+	InputName string
+}
+
+func (t ListInput) Name() string {
+	return t.InputName
+}
+
+func (ListInput) Description() string {
+	defer func() {
+		panic("(_listInput)Description should never be called")
+	}()
+
+	return ""
+}
+
+func (ListInput) String() string {
+	defer func() {
+		panic("(_listInput)String should never be called")
+	}()
+
+	return ""
+}
+
+func (ListInput) Error() error {
+	defer func() {
+		panic("(_listInput)Error should never be called")
+	}()
+
+	return nil
+}

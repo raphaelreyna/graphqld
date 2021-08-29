@@ -10,7 +10,7 @@ func (t Type) Name() string {
 
 func (Type) Description() string {
 	defer func() {
-		panic("(_type)Description should never be called")
+		panic("(_Type)Description should never be called")
 	}()
 
 	return ""
@@ -18,7 +18,7 @@ func (Type) Description() string {
 
 func (Type) String() string {
 	defer func() {
-		panic("(_type)String should never be called")
+		panic("(_Type)String should never be called")
 	}()
 
 	return ""
@@ -26,7 +26,7 @@ func (Type) String() string {
 
 func (Type) Error() error {
 	defer func() {
-		panic("(_type)Error should never be called")
+		panic("(_Type)Error should never be called")
 	}()
 
 	return nil

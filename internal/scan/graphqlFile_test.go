@@ -13,7 +13,7 @@ func TestGraphQLFile_Path(t *testing.T) {
 	var (
 		is = is.New(t)
 
-		gf graphqlFile
+		gf GraphQLFile
 	)
 
 	gf.path = "path"
@@ -25,7 +25,7 @@ func TestGraphQL_Fields(t *testing.T) {
 	var (
 		is = is.New(t)
 
-		gf graphqlFile
+		gf GraphQLFile
 
 		gql = `
 type TestType {

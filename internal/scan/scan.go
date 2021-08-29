@@ -1,6 +1,7 @@
 package scan
 
 import (
+	"fmt"
 	"io/fs"
 	"path/filepath"
 
@@ -8,17 +9,36 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/objdef"
 )
 
-func Scan(parent string, f File) (*FileFields, error) {
-	fields, err := f.Fields()
-	if err != nil {
-		return nil, err
+func Scan(parent string, f File) (*FileContents, error) {
+	switch x := f.(type) {
+	case execFile:
+		fields, err := x.Fields()
+		if err != nil {
+			return nil, err
+		}
+
+		return &FileContents{
+			Path:       f.Path(),
+			ParentName: parent,
+			Fields:     fields,
+		}, nil
+	case *GraphQLFile:
+		if err := x.scan(); err != nil {
+			return nil, err
+		}
+
+		fields, _ := x.Fields()
+		inputs, _ := x.Input()
+
+		return &FileContents{
+			Path:       x.Path(),
+			ParentName: parent,
+			Fields:     fields,
+			Input:      inputs,
+		}, nil
 	}
 
-	return &FileFields{
-		Path:       f.Path(),
-		ParentName: parent,
-		Fields:     fields,
-	}, nil
+	return nil, fmt.Errorf("invalid file type: %T", f)
 }
 
 func ScanForType(dir, parent, typeName string) (*objdef.ObjectDefinition, error) {
@@ -39,10 +59,11 @@ type FieldOutput struct {
 	Arguments []*ast.InputValueDefinition
 }
 
-type FileFields struct {
+type FileContents struct {
 	Path       string
 	ParentName string
 	Fields     []*FieldOutput
+	Input      *ast.InputObjectDefinition
 }
 
 type File interface {
@@ -60,7 +81,7 @@ func NewFile(root string, info fs.FileInfo) (File, error) {
 
 	ext := filepath.Ext(info.Name())
 	if ext == ".gql" || ext == ".graphql" {
-		return graphqlFile{
+		return &GraphQLFile{
 			path: filepath.Join(root, info.Name()),
 		}, nil
 	}
