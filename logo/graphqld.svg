@@ -16,6 +16,10 @@
    sodipodi:docname="graphqld.svg">
   <defs
      id="defs2" />
+   <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300');
+      .rubik{font-family:'Rubik';}
+   </style>
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -58,6 +62,7 @@
      id="layer1">
     <text
        xml:space="preserve"
+       class="rubik"
        style="font-style:normal;font-weight:normal;font-size:15.5222px;line-height:1.35;font-family:sans-serif;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.291041"
        x="29.014431"
        y="24.229338"
