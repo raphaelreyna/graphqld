@@ -59,7 +59,6 @@ Each executable is used as the resolver for the field it reports.
 Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAME}}.graphql` file.
 
 # Still missing...
-- support for defining input types
 - support for defining interfaces
 - support for defining enums
 - context
