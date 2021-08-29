@@ -7,11 +7,13 @@ import (
 )
 
 type Conf struct {
-	RootDir   string `yaml:"RootDir"`
-	HotReload bool   `yaml:"HotReload"`
-	Dir       string `yaml:"Dir"`
-	Graphiql  bool   `yaml:"GraphiQL"`
-	Port      string `yaml:"Port"`
+	RootDir         string `yaml:"RootDir"`
+	HotReload       bool   `yaml:"HotReload"`
+	Dir             string `yaml:"Dir"`
+	Graphiql        bool   `yaml:"GraphiQL"`
+	Port            string `yaml:"Port"`
+	ContextExecPath string `yaml:"ContextExec"`
+	ContextFilesDir string `yaml:"ContextFilesDir"`
 }
 
 func ParseYamlFile(path string) (*Conf, error) {
@@ -33,9 +35,11 @@ func ParseYamlFile(path string) (*Conf, error) {
 func ParseFromEnv() *Conf {
 	var (
 		c = Conf{
-			RootDir: os.Getenv("GRAPHQLD_ROOT_DIR"),
-			Dir:     os.Getenv("GRAPHQLD_DIR"),
-			Port:    os.Getenv("GRAPHQLD_PORT"),
+			RootDir:         os.Getenv("GRAPHQLD_ROOT_DIR"),
+			Dir:             os.Getenv("GRAPHQLD_DIR"),
+			Port:            os.Getenv("GRAPHQLD_PORT"),
+			ContextExecPath: os.Getenv("GRAPHQLD_CTX_EXEC"),
+			ContextFilesDir: os.Getenv("GRAPHQLD_CTX_DIR"),
 		}
 
 		defConf = Conf{}

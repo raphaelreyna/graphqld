@@ -15,18 +15,12 @@ const (
 	keyHeaderFunc key = iota
 	keyHeader
 	keyEnv
+	keyCtxFile
 )
 
-func Middleware(next http.Handler) http.Handler {
-	port := os.Getenv("PORT")
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, keyHeaderFunc, w.Header)
-		ctx = context.WithValue(ctx, keyHeader, r.Header)
-		ctx = context.WithValue(ctx, keyEnv, getEnv(port, r))
-
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+func GetCtxFile(ctx context.Context) *os.File {
+	file, _ := ctx.Value(keyCtxFile).(*os.File)
+	return file
 }
 
 func GetWHeader(ctx context.Context) http.Header {

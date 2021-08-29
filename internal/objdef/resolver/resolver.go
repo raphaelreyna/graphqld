@@ -76,7 +76,7 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldRe
 		)
 		cmd.Env = env
 
-		if ctxFile, ok := p.Context.Value(ctxKey).(*os.File); ok {
+		if ctxFile := http.GetCtxFile(p.Context); ctxFile != nil {
 			cmd.ExtraFiles = []*os.File{ctxFile}
 		}
 

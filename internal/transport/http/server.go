@@ -3,8 +3,11 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
+	"os/exec"
 	"sync"
 
 	"github.com/friendsofgo/graphiql"
@@ -14,7 +17,11 @@ import (
 )
 
 type Server struct {
-	Schema   chan graphql.Schema
+	Schema chan graphql.Schema
+
+	CtxPath     string
+	CtxFilesDir string
+
 	GraphiQL string
 
 	close chan struct{}
@@ -31,10 +38,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ctx = r.Context()
 
 		opts = handler.NewRequestOptions(r)
+
+		env = getEnv(s.port, r)
 	)
 	ctx = context.WithValue(ctx, keyHeaderFunc, w.Header)
-	ctx = context.WithValue(ctx, keyHeader, r.Header)
-	ctx = context.WithValue(ctx, keyEnv, getEnv(s.port, r))
+	ctx = context.WithValue(ctx, keyEnv, env)
 
 	var params = graphql.Params{
 		RequestString:  opts.Query,
@@ -46,6 +54,48 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.RLock()
 	params.Schema = s.schema
 	s.RUnlock()
+
+	if s.CtxPath != "" {
+		ctxFile, err := ioutil.TempFile(s.CtxFilesDir, "")
+		if err != nil {
+			log.Error().Err(err).
+				Msg("unable to create temporary context file")
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
+		}
+		defer func() {
+			ctxFile.Close()
+			os.Remove(ctxFile.Name())
+		}()
+
+		cmd := exec.Cmd{
+			Path: s.CtxPath,
+			Env:  env,
+		}
+
+		ctxData, err := cmd.Output()
+		if err != nil {
+			log.Error().Err(err).
+				Msg("unable to create a context from the ctx handler")
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
+		}
+
+		if _, err := ctxFile.Write(ctxData); err != nil {
+			log.Error().Err(err).
+				Msg("unable to write context to the context file")
+
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+
+			return
+		}
+
+		params.Context = context.WithValue(params.Context, keyCtxFile, ctxFile)
+	}
 
 	result := graphql.Do(params)
 

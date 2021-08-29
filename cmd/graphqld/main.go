@@ -72,6 +72,8 @@ func main() {
 	server := httputil.Server{}
 	server.Schema = make(chan graphql.Schema, 1)
 	server.Addr = ":" + c.Port
+	server.CtxPath = c.ContextExecPath
+	server.CtxFilesDir = c.ContextFilesDir
 
 	if c.Graphiql {
 		server.GraphiQL = "/graphiql"
