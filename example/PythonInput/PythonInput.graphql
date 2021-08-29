@@ -1,3 +1,4 @@
 input PythonInput {
     Name: String!
+    LevelTwo: PythonInputTwo
 }

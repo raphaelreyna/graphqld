@@ -2,6 +2,8 @@ package graph
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/graphql-go/graphql"
 	"github.com/raphaelreyna/graphqld/internal/objdef"
@@ -56,6 +58,7 @@ type inputReference struct {
 	referencingArgName   string
 	referer              interface{}
 	referencedInput      string
+	inputStack           string
 	inputWrapper         inputWrapper
 }
 
@@ -63,6 +66,17 @@ func (ir *inputReference) key(name string) string {
 	return fmt.Sprintf(
 		"@%s::%s::%s::%s",
 		ir.referencingType, ir.referencingFieldName,
-		ir.referencingArgName, name,
+		ir.referencingArgName, ir.inputStack+name,
 	)
+}
+
+func (ir *inputReference) dir() string {
+	var s = ir.referencingDir
+
+	stack := strings.Split(ir.inputStack, ":")
+	for _, input := range stack {
+		s = filepath.Join(s, input)
+	}
+
+	return filepath.Join(s, ir.referencedInput)
 }

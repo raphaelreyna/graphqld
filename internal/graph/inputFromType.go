@@ -47,14 +47,19 @@ func (g *Graph) gqlInputFromType(reference *inputReference, t ast.Type) graphql.
 		ii := intermediary.NonNullInput{
 			InputName: named.Name.Value,
 		}
-		if _, exists := g.uninstantiatedInputs[reference.key(ii.InputName)]; !exists {
-			g.uninstantiatedInputs[reference.key(ii.InputName)] = ii
-		}
 
 		if reference.referencingFieldName != "" && reference.referencingType != "" {
+			if _, ok := reference.referer.(*graphql.InputObjectConfig); ok {
+				reference.inputStack += ":" + reference.referencedInput
+			}
 			reference.referencedInput = ii.InputName
 			reference.inputWrapper = iwNonNull
+
 			g.inputReferences = append(g.inputReferences, reference)
+		}
+
+		if _, exists := g.uninstantiatedInputs[reference.key(ii.InputName)]; !exists {
+			g.uninstantiatedInputs[reference.key(ii.InputName)] = ii
 		}
 
 		return ii
@@ -71,14 +76,19 @@ func (g *Graph) gqlInputFromType(reference *inputReference, t ast.Type) graphql.
 		ii := intermediary.ListInput{
 			InputName: named.Name.Value,
 		}
-		if _, exists := g.uninstantiatedInputs[reference.key(ii.InputName)]; !exists {
-			g.uninstantiatedInputs[reference.key(ii.InputName)] = ii
-		}
 
 		if reference.referencingFieldName != "" && reference.referencingType != "" {
+			if _, ok := reference.referer.(*graphql.InputObjectConfig); ok {
+				reference.inputStack += reference.referencedInput + ":"
+			}
 			reference.referencedInput = ii.InputName
 			reference.inputWrapper = iwList
+
 			g.inputReferences = append(g.inputReferences, reference)
+		}
+
+		if _, exists := g.uninstantiatedInputs[reference.key(ii.InputName)]; !exists {
+			g.uninstantiatedInputs[reference.key(ii.InputName)] = ii
 		}
 
 		return ii
@@ -90,14 +100,19 @@ func (g *Graph) gqlInputFromType(reference *inputReference, t ast.Type) graphql.
 		ii := intermediary.Input{
 			InputName: x.Name.Value,
 		}
-		if _, exists := g.uninstantiatedInputs[reference.key(ii.InputName)]; !exists {
-			g.uninstantiatedInputs[reference.key(ii.InputName)] = ii
-		}
 
 		if reference.referencingFieldName != "" && reference.referencingType != "" {
+			if _, ok := reference.referer.(*graphql.InputObjectConfig); ok {
+				reference.inputStack += reference.referencedInput + ":"
+			}
 			reference.referencedInput = ii.InputName
 			reference.inputWrapper = iwNone
+
 			g.inputReferences = append(g.inputReferences, reference)
+		}
+
+		if _, exists := g.uninstantiatedInputs[reference.key(ii.InputName)]; !exists {
+			g.uninstantiatedInputs[reference.key(ii.InputName)] = ii
 		}
 
 		return ii

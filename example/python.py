@@ -11,4 +11,8 @@ if __name__ == '__main__':
         else:
             inputJSON = args[2]
             input = json.loads(inputJSON)
-            print(f'Hi {input["Name"]}, this is python!', end="")
+            python = "python"
+            if "LevelTwo" in input:
+                if input["LevelTwo"]["IncludeVersion"]:
+                    python = "python3"
+            print(f'Hi {input["Name"]}, this is {python}!', end="")
