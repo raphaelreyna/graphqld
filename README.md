@@ -64,6 +64,15 @@ This at least allows for some level of auth.
 
 See [the example auth python script](https://github.com/raphaelreyna/graphqld/tree/master/example/auth.py) to check out example of a context providing executable.
 
+# Extras
+### Hot Server / Live Reloading
+The graph can be rebuilt whenever theres a change in the root directory.
+To enable this, simply set `GRAPHQLD_HOT_RELOAD=TRUE`.
+
+### GraphiQL
+To enable the built-in GraphiQL server at `/graphiql`, simply set `GRAPHQLD_GRAPHIQL=TRUE`.
+
+
 # How it works
 The graph is built scanning the given directory and querying each executable for its fields:
 ```bash
