@@ -11,7 +11,7 @@ Still an experiment/poc.
 Consider the following schema:
 ```graphql
 type Query {
-  python: String!
+  python(ssss: PythonInput): String!
   javascript: String
   charCount(string: String!): CharCountResponse!
 }
@@ -19,15 +19,32 @@ type Query {
 type CharCountResponse {
   string: String!
   count: Int!
+  isEven: Boolean!
+}
+
+input PythonInput {
+  Name: String!
+  LevelTwo: PythonInputTwo
+}
+
+input PythonInputTwo {
+  IncludeVersion: Boolean!
 }
  ```
 To serve up this graph with graphqld we create a directory with the following structure and run `graphqld -f ./example/graphqld.yaml`:
 ```
-example
+example/graph
 ├── charCount.py
 ├── CharCountResponse
-│   └── CharCountResponse.graphql
+│   ├── CharCountResponse.graphql
+│   ├── isEven.py
+│   └── IsEvenResponse
+│       └── IsEvenResponse.graphql
 ├── javascript.js
+├── PythonInput
+│   ├── PythonInput.graphql
+│   └── PythonInputTwo
+│       └── PythonInputTwo.graphql
 └── python.py
 ```
 
