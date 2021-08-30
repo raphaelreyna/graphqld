@@ -1,4 +1,4 @@
-RootDir: "./example/graph"
+RootDir: "./example/graphqld"
 HotReload: true
 Dir: "."
 GraphiQL: true

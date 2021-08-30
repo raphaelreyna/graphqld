@@ -17,12 +17,18 @@ import (
 )
 
 type Server struct {
+	Addr string
+	Name string
+
 	Schema chan graphql.Schema
 
 	CtxPath     string
 	CtxFilesDir string
 
-	GraphiQL string
+	HotReload bool
+
+	GraphiQL        string
+	graphiqlHandler *graphiql.Handler
 
 	close chan struct{}
 
@@ -30,10 +36,24 @@ type Server struct {
 	port   string
 
 	sync.RWMutex
-	http.Server
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/graphiql" {
+		if s.graphiqlHandler != nil {
+			s.graphiqlHandler.ServeHTTP(w, r)
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
 	var (
 		ctx = r.Context()
 
@@ -107,7 +127,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) Run() error {
+func (s *Server) Start() error {
 	s.close = make(chan struct{})
 
 	_, port, err := net.SplitHostPort(s.Addr)
@@ -116,43 +136,31 @@ func (s *Server) Run() error {
 	}
 	s.port = port
 
-	mux := http.NewServeMux()
-	mux.Handle("/", s)
-
 	go func() {
-		for {
+		for run := true; run; {
 			select {
 			case schema := <-s.Schema:
 				s.Lock()
 				s.schema = schema
 				s.Unlock()
-				log.Info().
-					Msg("serving new schema")
 			case <-s.close:
 				return
 			}
+
+			run = s.HotReload
 		}
 	}()
 
 	if s.GraphiQL != "" {
-		graphiqlServer, err := graphiql.NewGraphiqlHandler("/")
+		s.graphiqlHandler, err = graphiql.NewGraphiqlHandler("/")
 		if err != nil {
 			return err
 		}
-
-		mux.Handle(s.GraphiQL, graphiqlServer)
-
-		log.Info().
-			Msg("enabled graphiql")
 	}
 
-	s.Handler = mux
-
-	return s.ListenAndServe()
+	return nil
 }
 
-func (s *Server) Stop(ctx context.Context) error {
+func (s *Server) Stop() {
 	s.close <- struct{}{}
-	s.Shutdown(ctx)
-	return nil
 }

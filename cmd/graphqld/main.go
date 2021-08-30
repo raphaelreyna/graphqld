@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"net"
+	"net/http"
 	"os"
 	"time"
 
@@ -46,7 +48,11 @@ func main() {
 
 	switch configPath {
 	case "":
-		c = config.ParseFromEnv()
+		c, err = config.ParseFromEnv()
+		if err != nil {
+			log.Fatal().Err(err).
+				Msg("error reading configuration from environment")
+		}
 		log.Info().Interface("conf", *c).
 			Msg("using default configuration")
 	default:
@@ -69,23 +75,112 @@ func main() {
 		return
 	}
 
-	server := httputil.Server{}
-	server.Schema = make(chan graphql.Schema, 1)
-	server.Addr = ":" + c.Port
-	server.CtxPath = c.ContextExecPath
-	server.CtxFilesDir = c.ContextFilesDir
+	var (
+		graphHosts  = make(map[string]*graphHost)
+		singleGraph *graphHost
+	)
+	for _, g := range c.Graphs {
+		gh, err := newGraphHost(c.Addr, g)
+		if err != nil {
+			log.Fatal().Err(err).
+				Msg("error creating new graph host")
+		}
 
-	if c.Graphiql {
-		server.GraphiQL = "/graphiql"
+		graphHosts[gh.config.ServerName] = gh
+
+		singleGraph = gh
+	}
+	if 1 < len(graphHosts) {
+		singleGraph = nil
 	}
 
-	g := graph.Graph{
-		Dir: c.RootDir,
+	http.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var gh = singleGraph
+
+		if gh == nil {
+			host, _, err := net.SplitHostPort(r.Host)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			gh = graphHosts[host]
+
+			if host != gh.config.ServerName {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		} else if c.Hostname != "" {
+			host, _, err := net.SplitHostPort(r.Host)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if host != c.Hostname {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		} else if gh.config.ServerName != "" {
+			host, _, err := net.SplitHostPort(r.Host)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			if host != gh.config.ServerName {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+		}
+
+		gh.ServeHTTP(w, r)
+	}))
+
+	if err := http.ListenAndServe(c.Addr, nil); err != nil {
+		log.Fatal().Err(err).
+			Msg("error listening and serving")
 	}
 
-	if err := g.Build(); err != nil {
+	if singleGraph != nil {
+		singleGraph.stop()
+	} else {
+		for _, gh := range graphHosts {
+			gh.stop()
+		}
+	}
+
+	retCode = 0
+}
+
+type graphHost struct {
+	config config.GraphConf
+
+	graph   graph.Graph
+	watcher reload.Watcher
+	server  httputil.Server
+}
+
+func newGraphHost(addr string, config config.GraphConf) (*graphHost, error) {
+	var gh = graphHost{
+		config: config,
+		server: httputil.Server{},
+		graph: graph.Graph{
+			Dir: config.DocumentRoot,
+		},
+	}
+
+	gh.server.Schema = make(chan graphql.Schema, 1)
+	gh.server.Addr = addr
+	gh.server.CtxPath = gh.config.ContextExecPath
+	gh.server.CtxFilesDir = gh.config.ContextFilesDir
+
+	if gh.config.Graphiql {
+		gh.server.GraphiQL = "/graphiql"
+	}
+
+	if err := gh.graph.Build(); err != nil {
 		var logEvent *zerolog.Event
-		if c.HotReload {
+		if gh.config.HotReload {
 			logEvent = log.Error()
 		} else {
 			logEvent = log.Fatal()
@@ -94,32 +189,35 @@ func main() {
 			Msg("unable to build graph schema config")
 	} else {
 		schema, err := graphql.NewSchema(graphql.SchemaConfig{
-			Query: graphql.NewObject(g.Query.ObjectConf),
+			Query: graphql.NewObject(gh.graph.Query.ObjectConf),
 		})
 		if err != nil {
-			log.Error().Err(err).
-				Msg("unable to build graph schema")
+			return nil, err
 		}
 
-		server.Schema <- schema
+		gh.server.Schema <- schema
 	}
 
-	if c.HotReload {
-		w := reload.Watcher{
-			RootDir:  c.RootDir,
+	if gh.config.HotReload {
+		gh.watcher = reload.Watcher{
+			RootDir:  gh.config.DocumentRoot,
 			Interval: time.Second,
-			Schema:   server.Schema,
-			ServerMu: &server.RWMutex,
+			Schema:   gh.server.Schema,
+			ServerMu: &gh.server.RWMutex,
 		}
 
-		go w.Run()
+		go gh.watcher.Run()
 	}
 
-	log.Info().Msg("starting ...")
-	if err := server.Run(); err != nil {
-		log.Error().Err(err).
-			Msg("error serving http")
-	}
+	gh.server.Start()
 
-	retCode = 0
+	return &gh, nil
+}
+
+func (gh *graphHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	gh.server.ServeHTTP(w, r)
+}
+
+func (gh *graphHost) stop() {
+	gh.server.Stop()
 }
