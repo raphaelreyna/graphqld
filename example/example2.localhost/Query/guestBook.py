@@ -1,0 +1,14 @@
+#!/usr/bin/python3
+
+import sys
+import json
+
+args = sys.argv
+
+if 1 < len(args):
+    if args[1] == "--cggi-fields":
+        print("[\"guestBook: [String]\"]")
+else:
+    with open("guestbook.txt", "r+") as f:
+        guests = f.read().splitlines() 
+        print(json.dumps(guests), end="")

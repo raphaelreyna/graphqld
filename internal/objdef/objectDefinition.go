@@ -19,6 +19,8 @@ type ObjectDefinition struct {
 func (od *ObjectDefinition) SetResolvers(root string) error {
 	var fields = od.ObjectConf.Fields.(graphql.FieldsThunk)()
 
+	var resolvedFields = graphql.Fields{}
+
 	for name, field := range fields {
 		if _, exists := od.ResolverPaths[name]; !exists {
 			continue
@@ -32,7 +34,17 @@ func (od *ObjectDefinition) SetResolvers(root string) error {
 			)
 		}
 
-		field.Resolve = resolverFn
+		resolvedFields[name] = &graphql.Field{
+			Name:    field.Name,
+			Type:    field.Type,
+			Args:    field.Args,
+			Resolve: *resolverFn,
+		}
 	}
+
+	od.ObjectConf.Fields = graphql.FieldsThunk(func() graphql.Fields {
+		return resolvedFields
+	})
+
 	return nil
 }

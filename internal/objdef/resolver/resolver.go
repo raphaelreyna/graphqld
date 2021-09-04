@@ -22,7 +22,7 @@ const (
 	ctxKey key = iota
 )
 
-func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldResolveFn, error) {
+func NewFieldResolveFn(root, path string, field *graphql.Field) (*graphql.FieldResolveFn, error) {
 	var (
 		takesArgs = 0 < len(field.Args)
 	)
@@ -42,7 +42,7 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldRe
 		)
 	}
 
-	return func(p graphql.ResolveParams) (interface{}, error) {
+	var f = func(p graphql.ResolveParams) (interface{}, error) {
 		var (
 			args = []string{}
 		)
@@ -110,5 +110,7 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (graphql.FieldRe
 		}
 
 		return parseOutput(output)
-	}, nil
+	}
+	var ff = graphql.FieldResolveFn(f)
+	return &ff, nil
 }

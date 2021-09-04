@@ -27,9 +27,8 @@ func init() {
 
 func main() {
 	var (
-		retCode = 1
-		c       *config.Conf
-		err     error
+		c   *config.Conf
+		err error
 	)
 
 	if os.Getenv("DEV") != "" {
@@ -41,9 +40,9 @@ func main() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Error().Interface("recovered", r)
+			log.Fatal().
+				Interface("recovered", r)
 		}
-		os.Exit(retCode)
 	}()
 
 	switch configPath {
@@ -90,6 +89,7 @@ func main() {
 
 		singleGraph = gh
 	}
+
 	if 1 < len(graphHosts) {
 		singleGraph = nil
 	}
@@ -148,8 +148,6 @@ func main() {
 			gh.stop()
 		}
 	}
-
-	retCode = 0
 }
 
 type graphHost struct {
@@ -188,9 +186,15 @@ func newGraphHost(addr string, config config.GraphConf) (*graphHost, error) {
 		logEvent.Err(err).
 			Msg("unable to build graph schema config")
 	} else {
-		schema, err := graphql.NewSchema(graphql.SchemaConfig{
-			Query: graphql.NewObject(gh.graph.Query.ObjectConf),
-		})
+		var schemaConf graphql.SchemaConfig
+		if q := gh.graph.Query; q != nil {
+			schemaConf.Query = graphql.NewObject(q.ObjectConf)
+		}
+		if m := gh.graph.Mutation; m != nil {
+			schemaConf.Mutation = graphql.NewObject(m.ObjectConf)
+		}
+
+		schema, err := graphql.NewSchema(schemaConf)
 		if err != nil {
 			return nil, err
 		}

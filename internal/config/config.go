@@ -197,3 +197,23 @@ func checkDomain(name string) error {
 	}
 	return nil
 }
+
+func dirHasGraph(path string) (bool, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return false, nil
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		var name = entry.Name()
+		if name == "Query" || name == "Mutation" {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}

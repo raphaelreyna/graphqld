@@ -80,7 +80,26 @@ func newOutputParser(outputType graphql.Output) (outputParser, error) {
 			return nil, fmt.Errorf("invalid output type: %T %+v", outputType, outputType)
 		}
 	case *graphql.List:
-		panic("TODO")
+		switch x.OfType.(type) {
+		case *graphql.Scalar:
+			return func(data []byte) (interface{}, error) {
+				var jsonOutput interface{}
+				if err := json.Unmarshal(data, &jsonOutput); err != nil {
+					return nil, err
+				}
+				return jsonOutput, nil
+			}, nil
+		case *graphql.Object:
+			return func(data []byte) (interface{}, error) {
+				var jsonOutput interface{}
+				if err := json.Unmarshal(data, &jsonOutput); err != nil {
+					return nil, err
+				}
+				return jsonOutput, nil
+			}, nil
+		default:
+			return nil, fmt.Errorf("invalid output type: %T %+v", outputType, outputType)
+		}
 	case *graphql.Scalar:
 		switch x {
 		case graphql.ID:
@@ -200,7 +219,20 @@ func argStringFromValue(argConf *graphql.ArgumentConfig, name string, v interfac
 			return string(data), nil
 		}
 	case *graphql.List:
-		panic("TODO")
+		switch x.OfType.(type) {
+		case *graphql.Scalar:
+			data, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			return string(data), nil
+		case *graphql.Object:
+			data, err := json.Marshal(v)
+			if err != nil {
+				return "", err
+			}
+			return string(data), nil
+		}
 	case *graphql.Scalar:
 		switch argConf.Type {
 		case graphql.ID:

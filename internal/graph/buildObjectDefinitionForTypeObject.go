@@ -37,11 +37,6 @@ func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*objdef.Ob
 		}
 	)
 
-	if (name == "query" || name == "Query") && g.Dir == dir {
-		name = "query"
-		scriptsDir = dir
-	}
-
 	dirEntries, err := os.ReadDir(scriptsDir)
 	if err != nil {
 		return nil, fmt.Errorf(
@@ -103,7 +98,7 @@ func (g *Graph) buildObjectDefinitionForTypeObject(dir, name string) (*objdef.Ob
 					var (
 						argConf   graphql.ArgumentConfig
 						reference = inputReference{
-							referencingDir:       dir,
+							referencingDir:       scriptsDir,
 							referencingType:      name,
 							referencingFieldName: fieldOutput.Name,
 							referencingArgName:   arg.Name.Value,

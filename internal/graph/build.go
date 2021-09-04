@@ -9,6 +9,7 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/intermediary"
 	"github.com/raphaelreyna/graphqld/internal/objdef"
 	"github.com/raphaelreyna/graphqld/internal/scan"
+	"github.com/rs/zerolog/log"
 )
 
 func (g *Graph) Build() error {
@@ -18,12 +19,23 @@ func (g *Graph) Build() error {
 			g.inputConfs = make(map[string]*graphql.InputObjectConfig)
 		}
 
-		def, err := g.buildObjectDefinitionForTypeObject(g.Dir, "query")
+		def, err := g.buildObjectDefinitionForTypeObject(g.Dir, "Query")
 		if err != nil {
-			return err
+			log.Info().Err(err).
+				Str("dir", g.Dir).
+				Msg("error building root query")
+		} else {
+			g.Query = def
 		}
 
-		g.Query = *def
+		def, err = g.buildObjectDefinitionForTypeObject(g.Dir, "Mutation")
+		if err != nil {
+			log.Info().Err(err).
+				Str("dir", g.Dir).
+				Msg("error building root mutation")
+		} else {
+			g.Mutation = def
+		}
 	}
 
 	// keep building referenced types as long as we have any
@@ -235,9 +247,18 @@ func (g *Graph) Build() error {
 
 	// finally we create a resolver for each field that needs one
 	{
-		if err := g.Query.SetResolvers(g.Dir); err != nil {
-			return err
+		if g.Query != nil {
+			if err := g.Query.SetResolvers(g.Dir); err != nil {
+				return err
+			}
 		}
+
+		if g.Mutation != nil {
+			if err := g.Mutation.SetResolvers(g.Dir); err != nil {
+				return err
+			}
+		}
+
 		for _, objDef := range g.objDefs {
 			if err := objDef.SetResolvers(g.Dir); err != nil {
 				return err

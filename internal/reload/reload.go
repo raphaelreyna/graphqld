@@ -43,9 +43,15 @@ func (w *Watcher) Run() error {
 					continue
 				}
 
-				schm, err := graphql.NewSchema(graphql.SchemaConfig{
-					Query: graphql.NewObject(g.Query.ObjectConf),
-				})
+				var schemaConf graphql.SchemaConfig
+				if q := g.Query; q != nil {
+					schemaConf.Query = graphql.NewObject(q.ObjectConf)
+				}
+				if m := g.Mutation; m != nil {
+					schemaConf.Mutation = graphql.NewObject(m.ObjectConf)
+				}
+
+				schm, err := graphql.NewSchema(schemaConf)
 				if err != nil {
 					log.Error().Err(err).
 						Msg("unable to rebuild schema")

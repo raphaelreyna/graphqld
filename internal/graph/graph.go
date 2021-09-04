@@ -23,7 +23,8 @@ type Graph struct {
 	objDefs    map[string]*objdef.ObjectDefinition
 	inputConfs map[string]*graphql.InputObjectConfig
 
-	Query objdef.ObjectDefinition
+	Query    *objdef.ObjectDefinition
+	Mutation *objdef.ObjectDefinition
 }
 
 type typeWrapper uint
