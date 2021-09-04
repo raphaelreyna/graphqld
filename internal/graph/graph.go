@@ -10,7 +10,8 @@ import (
 )
 
 type Graph struct {
-	Dir string
+	Dir        string
+	ResolverWD string
 
 	tm                  map[string]*graphql.Object
 	uninstantiatedTypes map[string]interface{}

@@ -22,7 +22,7 @@ const (
 	ctxKey key = iota
 )
 
-func NewFieldResolveFn(root, path string, field *graphql.Field) (*graphql.FieldResolveFn, error) {
+func NewFieldResolveFn(root, path, wd string, field *graphql.Field) (*graphql.FieldResolveFn, error) {
 	var (
 		takesArgs = 0 < len(field.Args)
 	)
@@ -78,6 +78,10 @@ func NewFieldResolveFn(root, path string, field *graphql.Field) (*graphql.FieldR
 
 		if ctxFile := http.GetCtxFile(p.Context); ctxFile != nil {
 			cmd.ExtraFiles = []*os.File{ctxFile}
+		}
+
+		if wd != "" {
+			cmd.Dir = wd
 		}
 
 		output, err := cmd.Output()

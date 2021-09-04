@@ -6,144 +6,192 @@ import (
 	"path/filepath"
 	"unicode/utf8"
 
-	"gopkg.in/yaml.v2"
+	"github.com/rs/zerolog/log"
+
+	"github.com/spf13/viper"
 )
 
+var Config Conf
+
 type GraphConf struct {
-	ServerName      string `yaml:"ServerName"`
-	DocumentRoot    string `yaml:"DocumentRoot"`
-	HotReload       bool   `yaml:"HotReload"`
-	ResolverDir     string `yaml:"ResolverDir"`
-	Graphiql        bool   `yaml:"GraphiQL"`
-	ContextExecPath string `yaml:"ContextExec"`
-	ContextFilesDir string `yaml:"ContextFilesDir"`
+	ServerName      string
+	DocumentRoot    string
+	HotReload       bool
+	hotReloadSet    bool
+	ResolverDir     string
+	Graphiql        bool
+	graphiqlSet     bool
+	ContextExecPath string
+	ContextFilesDir string
 }
 
 type Conf struct {
-	Hostname string      `yaml:"Hostname"`
-	Addr     string      `yaml:"Address"`
-	RootDir  string      `yaml:"RootDir"`
-	Graphs   []GraphConf `yaml:"Graphs"`
+	Hostname        string
+	Addr            string
+	RootDir         string
+	HotReload       bool
+	ResolverDir     string
+	Graphiql        bool
+	ContextExecPath string
+	ContextFilesDir string
+	Graphs          []GraphConf
 }
 
-func ParseYamlFile(path string) (*Conf, error) {
-	var c Conf
+func init() {
+	viper.SetConfigName("graphqld")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	viper.AddConfigPath("$HOME/.config/graphqld/")
+	viper.AddConfigPath("/etc/")
 
-	file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		return nil, err
+	viper.SetEnvPrefix("GRAPHQLD")
+	viper.AutomaticEnv()
+
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatal().Err(err).
+			Msg("error getting configuration")
 	}
-	defer file.Close()
 
-	if err := yaml.NewDecoder(file).Decode(&c); err != nil {
-		return nil, err
-	}
+	viper.SetDefault("hostname", "")
+	viper.SetDefault("address", ":80")
+	viper.SetDefault("root", "/var/graphqld")
+	viper.SetDefault("hot", false)
+	viper.SetDefault("graphiql", false)
+	viper.SetDefault("contextExecPath", "")
+	viper.SetDefault("contextFilesDir", "")
+	viper.SetDefault("resolverWD", "/")
 
-	return &c, nil
-}
+	Config.Hostname = viper.GetString("hostname")
+	Config.Addr = viper.GetString("address")
+	Config.RootDir = viper.GetString("root")
+	Config.HotReload = viper.GetBool("hot")
+	Config.Graphiql = viper.GetBool("graphiql")
 
-func ParseFromEnv() (*Conf, error) {
 	var (
-		c = Conf{
-			Hostname: os.Getenv("GRAPHQLD_HOSTNAME"),
-			RootDir:  os.Getenv("GRAPHQLD_ROOT_DIR"),
-			Addr:     os.Getenv("GRAPHQLD_ADDRESS"),
-			Graphs:   make([]GraphConf, 0),
-		}
-
-		defConf = Conf{}
-
-		hotReload   bool
-		graphiql    bool
-		dir         = os.Getenv("GRAPHQLD_RESOLVER_DIR")
-		ctxExecPath = os.Getenv("GRAPHQLD_CTX_EXEC")
-		ctxFilesDir = os.Getenv("GRAPHQLD_CTX_DIR")
-		port        = os.Getenv("GRAPHQLD_PORT")
+		confGraphs = make(map[string]GraphConf)
+		dirGraphs  = make([]GraphConf, 0)
 	)
+	{
+		if iface := viper.Get("graphs"); iface != nil {
+			for _, v := range iface.([]interface{}) {
+				var (
+					m  = v.(map[interface{}]interface{})
+					gc GraphConf
+				)
 
-	defConf.Default()
+				if x, ok := m["serverName"]; ok {
+					gc.ServerName = x.(string)
+				}
 
-	switch x := os.Getenv("GRAPHQLD_HOT_RELOAD"); x {
-	case "":
-		hotReload = false
-	default:
-		hotReload = true
-	}
+				if x, ok := m["hot"]; ok {
+					gc.HotReload = x.(bool)
+					gc.hotReloadSet = true
+				}
 
-	switch x := os.Getenv("GRAPHQLD_GRAPHIQL"); x {
-	case "":
-		graphiql = false
-	default:
-		graphiql = true
-	}
+				if x, ok := m["workingDir"]; ok {
+					gc.ResolverDir = x.(string)
+				}
 
-	if dir == "" {
-		dir = "/"
-	}
+				if x, ok := m["graphiql"]; ok {
+					gc.Graphiql = x.(bool)
+					gc.graphiqlSet = true
+				}
 
-	if port != "" {
-		c.Addr = ":" + port
-	}
+				if x, ok := m["contextExecPath"]; ok {
+					gc.ContextExecPath = x.(string)
+				}
 
-	if c.RootDir == "" {
-		c.RootDir = defConf.RootDir
-	}
+				if x, ok := m["contextFilesDir"]; ok {
+					gc.ContextFilesDir = x.(string)
+				}
 
-	dirs, err := os.ReadDir(c.RootDir)
-	if err != nil {
-		return nil, nil
-	}
-
-	for _, item := range dirs {
-		if !item.IsDir() {
-			c.Graphs = make([]GraphConf, 0)
-			break
-		}
-
-		name := item.Name()
-
-		gc := GraphConf{
-			HotReload:       hotReload,
-			Graphiql:        graphiql,
-			DocumentRoot:    filepath.Join(c.RootDir, name),
-			ResolverDir:     dir,
-			ContextExecPath: ctxExecPath,
-			ContextFilesDir: ctxFilesDir,
-		}
-
-		if err := checkDomain(name); err != nil {
-			return nil, err
-		}
-		gc.ServerName = name
-
-		c.Graphs = append(c.Graphs, gc)
-	}
-
-	if len(c.Graphs) == 0 {
-		gc := GraphConf{
-			HotReload:       hotReload,
-			Graphiql:        graphiql,
-			DocumentRoot:    c.RootDir,
-			ResolverDir:     dir,
-			ContextExecPath: ctxExecPath,
-			ContextFilesDir: ctxFilesDir,
-		}
-
-		if c.Hostname != "" {
-			if err := checkDomain(c.Hostname); err != nil {
-				return nil, err
+				confGraphs[gc.ServerName] = gc
 			}
 		}
 
-		c.Graphs = append(c.Graphs, gc)
+		dirs, err := os.ReadDir(Config.RootDir)
+		if err != nil {
+			log.Fatal().Err(err).
+				Msg("unable to read root directory")
+		}
+
+		for _, item := range dirs {
+			if !item.IsDir() {
+				dirGraphs = make([]GraphConf, 0)
+				break
+			}
+
+			name := item.Name()
+
+			gc := GraphConf{
+				HotReload:       viper.GetBool("hot"),
+				Graphiql:        viper.GetBool("graphiql"),
+				DocumentRoot:    filepath.Join(Config.RootDir, name),
+				ResolverDir:     viper.GetString("resolverWD"),
+				ContextExecPath: viper.GetString("contextExecPath"),
+				ContextFilesDir: viper.GetString("contextFilesDir"),
+			}
+
+			if err := checkDomain(name); err != nil {
+				log.Fatal().Err(err).
+					Msg("invalid domain name")
+			}
+			gc.ServerName = name
+
+			dirGraphs = append(dirGraphs, gc)
+		}
+
+		if len(dirGraphs) == 0 {
+			gc := GraphConf{
+				HotReload:       viper.GetBool("hot"),
+				Graphiql:        viper.GetBool("graphiql"),
+				DocumentRoot:    Config.RootDir,
+				ResolverDir:     viper.GetString("resolverWD"),
+				ContextExecPath: viper.GetString("contextExecPath"),
+				ContextFilesDir: viper.GetString("contextFilesDir"),
+			}
+
+			if Config.Hostname != "" {
+				if err := checkDomain(Config.Hostname); err != nil {
+					log.Fatal().Err(err).
+						Msg("invalid domain name")
+				}
+			}
+
+			dirGraphs = append(dirGraphs, gc)
+		}
 	}
 
-	return &c, nil
-}
+	Config.Graphs = make([]GraphConf, 0)
+	for _, graph := range dirGraphs {
+		confGraph, ok := confGraphs[graph.ServerName]
+		if !ok {
+			Config.Graphs = append(Config.Graphs, graph)
+			continue
+		}
 
-func (c *Conf) Default() {
-	c.RootDir = "/var/graphqld"
-	c.Addr = ":80"
+		if x := confGraph.ResolverDir; x != "" {
+			graph.ResolverDir = x
+		}
+
+		if x := confGraph.HotReload; confGraph.hotReloadSet {
+			graph.HotReload = x
+		}
+
+		if x := confGraph.Graphiql; confGraph.graphiqlSet {
+			graph.Graphiql = x
+		}
+
+		if x := confGraph.ContextExecPath; x != "" {
+			graph.ContextExecPath = x
+		}
+
+		if x := confGraph.ContextFilesDir; x != "" {
+			graph.ContextFilesDir = x
+		}
+
+		Config.Graphs = append(Config.Graphs, graph)
+	}
 }
 
 // Copy-Pasted from: https://gist.github.com/chmike/d4126a3247a6d9a70922fc0e8b4f4013
@@ -196,24 +244,4 @@ func checkDomain(name string) error {
 		return fmt.Errorf("invalid domain: top level domain '%s' at offset %d begins with a digit", name[l:], l)
 	}
 	return nil
-}
-
-func dirHasGraph(path string) (bool, error) {
-	entries, err := os.ReadDir(path)
-	if err != nil {
-		return false, nil
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		var name = entry.Name()
-		if name == "Query" || name == "Mutation" {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

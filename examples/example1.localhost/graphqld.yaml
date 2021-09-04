@@ -1,5 +1,0 @@
-RootDir: "./example/graphqld"
-HotReload: true
-Dir: "."
-GraphiQL: true
-Port: "8080"
