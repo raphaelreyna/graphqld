@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/rs/zerolog/log"
@@ -43,6 +44,11 @@ func init() {
 	viper.AddConfigPath(".")
 	viper.AddConfigPath("$HOME/.config/graphqld/")
 	viper.AddConfigPath("/etc/")
+
+	viper.SetEnvKeyReplacer(strings.NewReplacer(
+		"CONTEXTEXECPATH", "CTX_EXEC_PATH",
+		"CONTEXTFILESDIR", "CTX_FILES_DIR",
+	))
 
 	viper.SetEnvPrefix("GRAPHQLD")
 	viper.AutomaticEnv()
