@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/viper"
@@ -48,10 +49,33 @@ func init() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(
 		"CONTEXTEXECPATH", "CTX_EXEC_PATH",
 		"CONTEXTFILESDIR", "CTX_FILES_DIR",
+		"RESOLVERDIR", "RESOLVER_DIR",
+		"LOGJSON", "LOG_JSON",
+		"LOGCOLOR", "LOG_COLOR",
 	))
 
 	viper.SetEnvPrefix("GRAPHQLD")
 	viper.AutomaticEnv()
+
+	viper.SetDefault("hostname", "")
+	viper.SetDefault("address", "")
+	viper.SetDefault("root", "/var/graphqld")
+	viper.SetDefault("hot", false)
+	viper.SetDefault("graphiql", false)
+	viper.SetDefault("contextExecPath", "")
+	viper.SetDefault("contextFilesDir", "")
+	viper.SetDefault("resolverDir", "/")
+	viper.SetDefault("port", "80")
+	viper.SetDefault("logJSON", false)
+	viper.SetDefault("logColor", true)
+	viper.SetDefault("resolverDir", "/")
+
+	if !viper.GetBool("logJSON") {
+		log.Logger = log.Output(zerolog.ConsoleWriter{
+			Out:     os.Stdout,
+			NoColor: !viper.GetBool("logColor"),
+		})
+	}
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
@@ -61,22 +85,22 @@ func init() {
 		}
 
 		log.Info().Msg("no configuration file found")
+	} else {
+		log.Info().
+			Str("file", viper.ConfigFileUsed()).
+			Msg("read configuration")
 	}
-
-	viper.SetDefault("hostname", "")
-	viper.SetDefault("address", ":80")
-	viper.SetDefault("root", "/var/graphqld")
-	viper.SetDefault("hot", false)
-	viper.SetDefault("graphiql", false)
-	viper.SetDefault("contextExecPath", "")
-	viper.SetDefault("contextFilesDir", "")
-	viper.SetDefault("resolverWD", "/")
 
 	Config.Hostname = viper.GetString("hostname")
 	Config.Addr = viper.GetString("address")
 	Config.RootDir = viper.GetString("root")
 	Config.HotReload = viper.GetBool("hot")
 	Config.Graphiql = viper.GetBool("graphiql")
+	Config.ResolverDir = viper.GetString("resolverDir")
+
+	if Config.Addr == "" {
+		Config.Addr = ":" + viper.GetString("port")
+	}
 
 	var (
 		confGraphs = make(map[string]GraphConf)
@@ -99,7 +123,7 @@ func init() {
 					gc.hotReloadSet = true
 				}
 
-				if x, ok := m["workingDir"]; ok {
+				if x, ok := m["resolverDir"]; ok {
 					gc.ResolverDir = x.(string)
 				}
 
@@ -154,7 +178,7 @@ func init() {
 				HotReload:       viper.GetBool("hot"),
 				Graphiql:        viper.GetBool("graphiql"),
 				DocumentRoot:    path,
-				ResolverDir:     viper.GetString("resolverWD"),
+				ResolverDir:     viper.GetString("resolverDir"),
 				ContextExecPath: viper.GetString("contextExecPath"),
 				ContextFilesDir: viper.GetString("contextFilesDir"),
 			}

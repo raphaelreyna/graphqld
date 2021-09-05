@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+var ErrorNoRoots = errors.New("no root query or mutation directories found")
+
 func (g *Graph) Build() error {
 	// build object definition for root query object
 	{
@@ -20,7 +23,7 @@ func (g *Graph) Build() error {
 		}
 
 		def, err := g.buildObjectDefinitionForTypeObject(g.Dir, "Query")
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrTypeHasNoDir) {
 			log.Info().Err(err).
 				Str("dir", g.Dir).
 				Msg("error building root query")
@@ -29,12 +32,16 @@ func (g *Graph) Build() error {
 		}
 
 		def, err = g.buildObjectDefinitionForTypeObject(g.Dir, "Mutation")
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrTypeHasNoDir) {
 			log.Info().Err(err).
 				Str("dir", g.Dir).
 				Msg("error building root mutation")
 		} else {
 			g.Mutation = def
+		}
+
+		if g.Mutation == nil && g.Query == nil {
+			return ErrorNoRoots
 		}
 	}
 

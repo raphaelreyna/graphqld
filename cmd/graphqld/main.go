@@ -3,23 +3,14 @@ package main
 import (
 	"net"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/raphaelreyna/graphqld/internal/config"
 	graphhost "github.com/raphaelreyna/graphqld/internal/graphHost"
-	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
 func main() {
-	if os.Getenv("DEV") != "" {
-		zerolog.SetGlobalLevel(-1)
-		log.Logger = log.Output(zerolog.ConsoleWriter{
-			Out: os.Stdout,
-		})
-	}
-
 	defer func() {
 		if r := recover(); r != nil {
 			log.Fatal().
@@ -34,16 +25,30 @@ func main() {
 		singleGraph *graphhost.GraphHost
 	)
 
-	log.Info().
-		Str("hostname", c.Hostname).
-		Str("address", c.Addr).
-		Str("root", c.RootDir).
-		Str("resolver-wd", c.ResolverDir).
-		Str("ctx-exec-path", c.ContextExecPath).
-		Str("ctx-files-wd", c.ContextFilesDir).
-		Bool("hot", c.HotReload).
-		Bool("graphiql", c.Graphiql).
-		Msg("loaded configuration")
+	{
+		logEvent := log.Info().
+			Str("address", c.Addr).
+			Str("root", c.RootDir)
+
+		if c.Hostname != "" {
+			logEvent = logEvent.Str("hostname", c.Hostname)
+		}
+
+		logEvent.Msg("server configuration")
+
+		logEvent = log.Info().
+			Bool("hot", c.HotReload).
+			Bool("graphiql", c.Graphiql).
+			Str("resolver-wd", c.ResolverDir)
+		if c.ContextExecPath != "" {
+			logEvent = logEvent.Str("ctx-exec-path", c.ContextExecPath)
+		}
+		if c.ContextFilesDir != "" {
+			logEvent = logEvent.Str("ctx-files-wd", c.ContextFilesDir)
+		}
+
+		logEvent.Msg("graph default configuration")
+	}
 
 	for _, g := range c.Graphs {
 		gh, err := graphhost.NewGraphHost(c.Addr, g)
@@ -56,15 +61,19 @@ func main() {
 
 		singleGraph = gh
 
-		log.Info().
-			Str("server-name", g.ServerName).
-			Str("document-root", g.DocumentRoot).
-			Str("resolver-wd", g.ResolverDir).
-			Str("ctx-exec-path", g.ContextExecPath).
-			Str("ctx-files-wd", g.ContextFilesDir).
+		logEvent := log.Info().
 			Bool("hot", g.HotReload).
 			Bool("graphiql", g.Graphiql).
-			Msg("loaded graph configuration")
+			Str("server-name", g.ServerName).
+			Str("document-root", g.DocumentRoot).
+			Str("resolver-dir", g.ResolverDir)
+		if g.ContextExecPath != "" {
+			logEvent = logEvent.Str("ctx-exec-path", g.ContextExecPath)
+		}
+		if g.ContextFilesDir != "" {
+			logEvent = logEvent.Str("ctx-files-wd", g.ContextFilesDir)
+		}
+		logEvent.Msg("loaded graph configuration")
 	}
 
 	if 1 < len(graphHosts) {
@@ -119,10 +128,14 @@ func main() {
 		gh.ServeHTTP(w, r)
 	}))
 
+	log.Info().Msg("listening for HTTP traffic ...")
+
 	if err := http.ListenAndServe(c.Addr, nil); err != nil {
 		log.Fatal().Err(err).
 			Msg("error listening and serving")
 	}
+
+	log.Info().Msg("... stopped listening for HTTP traffic")
 
 	if singleGraph != nil {
 		singleGraph.Stop()
