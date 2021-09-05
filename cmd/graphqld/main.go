@@ -4,6 +4,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/raphaelreyna/graphqld/internal/config"
 	graphhost "github.com/raphaelreyna/graphqld/internal/graphHost"
@@ -59,8 +60,11 @@ func main() {
 		if gh == nil {
 			host, _, err := net.SplitHostPort(r.Host)
 			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
+				if !strings.Contains(err.Error(), "missing port") {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				host = r.Host
 			}
 
 			gh = graphHosts[host]

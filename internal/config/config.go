@@ -48,8 +48,13 @@ func init() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatal().Err(err).
-			Msg("error getting configuration")
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			log.Fatal().Err(err).
+				Str("configuration-file", viper.ConfigFileUsed()).
+				Msg("error reading configuration file")
+		}
+
+		log.Info().Msg("no configuration file found")
 	}
 
 	viper.SetDefault("hostname", "")
@@ -97,6 +102,10 @@ func init() {
 					gc.graphiqlSet = true
 				}
 
+				if x, ok := m["resolverWD"]; ok {
+					gc.ResolverDir = x.(string)
+				}
+
 				if x, ok := m["contextExecPath"]; ok {
 					gc.ContextExecPath = x.(string)
 				}
@@ -117,16 +126,28 @@ func init() {
 
 		for _, item := range dirs {
 			if !item.IsDir() {
-				dirGraphs = make([]GraphConf, 0)
-				break
+				continue
 			}
 
-			name := item.Name()
+			var (
+				name = item.Name()
+				path = filepath.Join(Config.RootDir, name)
+			)
+
+			isOk, err := isGraphDir(path)
+			if err != nil {
+				log.Fatal().Err(err).
+					Msg("unable to check if directory has graph")
+			}
+
+			if !isOk {
+				continue
+			}
 
 			gc := GraphConf{
 				HotReload:       viper.GetBool("hot"),
 				Graphiql:        viper.GetBool("graphiql"),
-				DocumentRoot:    filepath.Join(Config.RootDir, name),
+				DocumentRoot:    path,
 				ResolverDir:     viper.GetString("resolverWD"),
 				ContextExecPath: viper.GetString("contextExecPath"),
 				ContextFilesDir: viper.GetString("contextFilesDir"),
@@ -244,4 +265,21 @@ func checkDomain(name string) error {
 		return fmt.Errorf("invalid domain: top level domain '%s' at offset %d begins with a digit", name[l:], l)
 	}
 	return nil
+}
+
+func isGraphDir(path string) (bool, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return false, err
+	}
+
+	for _, entry := range entries {
+		var name = entry.Name()
+
+		if name == "Query" || name == "Mutation" {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
