@@ -35,7 +35,14 @@ func main() {
 	)
 
 	log.Info().
-		Interface("configuration", c).
+		Str("hostname", c.Hostname).
+		Str("address", c.Addr).
+		Str("root", c.RootDir).
+		Str("resolver-wd", c.ResolverDir).
+		Str("ctx-exec-path", c.ContextExecPath).
+		Str("ctx-files-wd", c.ContextFilesDir).
+		Bool("hot", c.HotReload).
+		Bool("graphiql", c.Graphiql).
 		Msg("loaded configuration")
 
 	for _, g := range c.Graphs {
@@ -48,6 +55,16 @@ func main() {
 		graphHosts[gh.Config.ServerName] = gh
 
 		singleGraph = gh
+
+		log.Info().
+			Str("server-name", g.ServerName).
+			Str("document-root", g.DocumentRoot).
+			Str("resolver-wd", g.ResolverDir).
+			Str("ctx-exec-path", g.ContextExecPath).
+			Str("ctx-files-wd", g.ContextFilesDir).
+			Bool("hot", g.HotReload).
+			Bool("graphiql", g.Graphiql).
+			Msg("loaded graph configuration")
 	}
 
 	if 1 < len(graphHosts) {
