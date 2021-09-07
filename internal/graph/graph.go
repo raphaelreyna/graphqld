@@ -9,43 +9,45 @@ import (
 
 var ErrorNoRoots = errors.New("no root query or mutation directories found")
 
+type definitions map[string]interface{}
+type resolverPaths map[string]map[string]string
+type enums map[string]*graphql.Enum
+type inputs map[string]*graphql.InputObject
+type objects map[string]*graphql.Object
+
 type Graph struct {
 	DocumentRoot string
 	ResolverDir  string
-
-	definitions map[string]interface{}
-
-	resolverPaths map[string]map[string]string
-
-	enums   map[string]*graphql.Enum
-	inputs  map[string]*graphql.InputObject
-	objects map[string]*graphql.Object
 
 	Query    *graphql.Object
 	Mutation *graphql.Object
 }
 
 func (g *Graph) Build() error {
-	if err := g.scanForDefinitions(); err != nil {
+	definitions, resolverPaths, err := g.scanForDefinitions()
+	if err != nil {
 		return err
 	}
 
-	if err := g.instantiateEnums(); err != nil {
+	enums, err := g.instantiateEnums(definitions)
+	if err != nil {
 		return err
 	}
 
-	if err := g.instantiateInputs(); err != nil {
+	inputs, err := g.instantiateInputs(definitions, enums)
+	if err != nil {
 		return err
 	}
 
-	if err := g.instantiateObjects(); err != nil {
+	objects, err := g.instantiateObjects(definitions, enums, inputs)
+	if err != nil {
 		return err
 	}
 
-	if q := g.objects["Query"]; 0 < len(q.Fields()) {
+	if q := objects["Query"]; 0 < len(q.Fields()) {
 		g.Query = q
 	}
-	if m := g.objects["Mutation"]; 0 < len(m.Fields()) {
+	if m := objects["Mutation"]; 0 < len(m.Fields()) {
 		g.Mutation = m
 	}
 
@@ -53,8 +55,8 @@ func (g *Graph) Build() error {
 		return ErrorNoRoots
 	}
 
-	for objName, resolverPaths := range g.resolverPaths {
-		var fields = g.objects[objName].Fields()
+	for objName, resolverPaths := range resolverPaths {
+		var fields = objects[objName].Fields()
 
 		for fieldName, resolverPath := range resolverPaths {
 			var field = fields[fieldName]
@@ -66,13 +68,6 @@ func (g *Graph) Build() error {
 			field.Resolve = *resolver
 		}
 	}
-
-	g.definitions = nil
-	g.resolverPaths = nil
-	g.objects = nil
-	g.resolverPaths = nil
-	g.inputs = nil
-	g.enums = nil
 
 	return nil
 }

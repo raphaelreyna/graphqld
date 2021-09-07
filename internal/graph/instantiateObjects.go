@@ -7,7 +7,7 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
-func (g *Graph) instantiateObjects() error {
+func (g *Graph) instantiateObjects(defs definitions, enums enums, inputs inputs) (objects, error) {
 	var (
 		unknowns = make([]*Unknown, 0)
 
@@ -15,10 +15,8 @@ func (g *Graph) instantiateObjects() error {
 			"Query":    make(graphql.Fields),
 			"Mutation": make(graphql.Fields),
 		}
-	)
 
-	if g.objects == nil {
-		g.objects = map[string]*graphql.Object{
+		objects = objects{
 			"Query": graphql.NewObject(graphql.ObjectConfig{
 				Name: "Query",
 				Fields: graphql.FieldsThunk(func() graphql.Fields {
@@ -32,9 +30,9 @@ func (g *Graph) instantiateObjects() error {
 				}),
 			}),
 		}
-	}
+	)
 
-	for k, v := range g.definitions {
+	for k, v := range defs {
 		var (
 			parts   = strings.Split(k, "::")
 			defType = parts[0]
@@ -101,7 +99,7 @@ func (g *Graph) instantiateObjects() error {
 			description = d.Value
 		}
 
-		g.objects[name] = graphql.NewObject(graphql.ObjectConfig{
+		objects[name] = graphql.NewObject(graphql.ObjectConfig{
 			Name: name,
 			Fields: graphql.FieldsThunk(func() graphql.Fields {
 				return fields
@@ -111,10 +109,10 @@ func (g *Graph) instantiateObjects() error {
 
 		fieldsMap[name] = fields
 
-		delete(g.definitions, k)
+		delete(defs, k)
 	}
 
-	for k, v := range g.definitions {
+	for k, v := range defs {
 		var (
 			parts = strings.Split(k, "::")
 
@@ -131,9 +129,9 @@ func (g *Graph) instantiateObjects() error {
 		objName = parts[0]
 		name = parts[1]
 
-		var obj, ok = g.objects[objName]
+		var obj, ok = objects[objName]
 		if !ok {
-			delete(g.definitions, k)
+			delete(defs, k)
 			continue
 		}
 
@@ -180,7 +178,7 @@ func (g *Graph) instantiateObjects() error {
 		fields := fieldsMap[obj.Name()]
 		fields[name] = &fieldConf
 
-		delete(g.definitions, k)
+		delete(defs, k)
 	}
 
 	for _, u := range unknowns {
@@ -188,37 +186,37 @@ func (g *Graph) instantiateObjects() error {
 		case *graphql.Field:
 			var referencedName = u.Name()
 
-			if referenced, ok := g.enums[referencedName]; ok {
+			if referenced, ok := enums[referencedName]; ok {
 				referencer.Type = u.ModifyType(referenced)
 				continue
 			}
 
-			if referenced, ok := g.inputs[referencedName]; ok {
+			if referenced, ok := inputs[referencedName]; ok {
 				referencer.Type = u.ModifyType(referenced)
 				continue
 			}
 
-			if referenced, ok := g.objects[referencedName]; ok {
+			if referenced, ok := objects[referencedName]; ok {
 				referencer.Type = u.ModifyType(referenced)
 			}
 		case *graphql.ArgumentConfig:
 			var referencedName = u.Name()
 
-			if referenced, ok := g.enums[referencedName]; ok {
+			if referenced, ok := enums[referencedName]; ok {
 				referencer.Type = u.ModifyType(referenced)
 				continue
 			}
 
-			if referenced, ok := g.inputs[referencedName]; ok {
+			if referenced, ok := inputs[referencedName]; ok {
 				referencer.Type = u.ModifyType(referenced)
 				continue
 			}
 
-			if referenced, ok := g.objects[referencedName]; ok {
+			if referenced, ok := objects[referencedName]; ok {
 				referencer.Type = u.ModifyType(referenced)
 			}
 		}
 	}
 
-	return nil
+	return objects, nil
 }

@@ -7,14 +7,13 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
-func (g *Graph) instantiateInputs() error {
-	var unknowns = make([]*Unknown, 0)
+func (g *Graph) instantiateInputs(defs definitions, enums enums) (inputs, error) {
+	var (
+		unknowns = make([]*Unknown, 0)
+		inputs   = make(map[string]*graphql.InputObject)
+	)
 
-	if g.inputs == nil {
-		g.inputs = make(map[string]*graphql.InputObject)
-	}
-
-	for k, v := range g.definitions {
+	for k, v := range defs {
 		var (
 			parts   = strings.Split(k, "::")
 			defType = parts[0]
@@ -57,13 +56,13 @@ func (g *Graph) instantiateInputs() error {
 			description = d.Value
 		}
 
-		g.inputs[name] = graphql.NewInputObject(graphql.InputObjectConfig{
+		inputs[name] = graphql.NewInputObject(graphql.InputObjectConfig{
 			Name:        name,
 			Fields:      fields,
 			Description: description,
 		})
 
-		delete(g.definitions, k)
+		delete(defs, k)
 	}
 
 	for _, u := range unknowns {
@@ -72,15 +71,15 @@ func (g *Graph) instantiateInputs() error {
 			referencedName = u.Name()
 		)
 
-		if referenced, ok := g.enums[referencedName]; ok {
+		if referenced, ok := enums[referencedName]; ok {
 			referencer.Type = u.ModifyType(referenced)
 			continue
 		}
 
-		if referenced, ok := g.inputs[referencedName]; ok {
+		if referenced, ok := inputs[referencedName]; ok {
 			referencer.Type = u.ModifyType(referenced)
 		}
 	}
 
-	return nil
+	return inputs, nil
 }

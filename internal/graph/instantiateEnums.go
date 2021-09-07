@@ -7,12 +7,10 @@ import (
 	"github.com/graphql-go/graphql/language/ast"
 )
 
-func (g *Graph) instantiateEnums() error {
-	if g.enums == nil {
-		g.enums = make(map[string]*graphql.Enum)
-	}
+func (g *Graph) instantiateEnums(defs definitions) (enums, error) {
+	var enums = make(enums)
 
-	for k, v := range g.definitions {
+	for k, v := range defs {
 		var (
 			parts   = strings.Split(k, "::")
 			defType = parts[0]
@@ -48,14 +46,14 @@ func (g *Graph) instantiateEnums() error {
 		if d := enum.Description; d != nil {
 			description = d.Value
 		}
-		g.enums[name] = graphql.NewEnum(graphql.EnumConfig{
+		enums[name] = graphql.NewEnum(graphql.EnumConfig{
 			Name:        name,
 			Values:      values,
 			Description: description,
 		})
 
-		delete(g.definitions, k)
+		delete(defs, k)
 	}
 
-	return nil
+	return enums, nil
 }

@@ -9,13 +9,13 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/scan"
 )
 
-func (g *Graph) scanForDefinitions() error {
-	if g.definitions == nil {
-		g.definitions = make(map[string]interface{})
-		g.resolverPaths = make(map[string]map[string]string)
-	}
+func (g *Graph) scanForDefinitions() (definitions, resolverPaths, error) {
+	var (
+		definitions   = make(definitions)
+		resolverPaths = make(resolverPaths)
+	)
 
-	return filepath.WalkDir(g.DocumentRoot, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(g.DocumentRoot, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
 		}
@@ -45,34 +45,36 @@ func (g *Graph) scanForDefinitions() error {
 			for _, field := range file.Fields {
 				var key = fmt.Sprintf("field::%s:%s", file.ObjectName, file.Name)
 
-				g.definitions[key] = field
+				definitions[key] = field
 
-				paths, ok := g.resolverPaths[file.ObjectName]
+				paths, ok := resolverPaths[file.ObjectName]
 				if !ok {
 					paths = make(map[string]string)
-					g.resolverPaths[file.ObjectName] = paths
+					resolverPaths[file.ObjectName] = paths
 				}
 
 				paths[file.Name] = file.Path()
 			}
 		case *scan.GraphqlFile:
 			for _, obj := range file.Objects {
-				g.definitions["object::"+obj.Name.Value] = obj
+				definitions["object::"+obj.Name.Value] = obj
 			}
 
 			for _, input := range file.Inputs {
-				g.definitions["input::"+input.Name.Value] = input
+				definitions["input::"+input.Name.Value] = input
 			}
 
 			for _, enum := range file.Enums {
-				g.definitions["enum::"+enum.Name.Value] = enum
+				definitions["enum::"+enum.Name.Value] = enum
 			}
 
 			for _, iface := range file.Interfaces {
-				g.definitions["iface::"+iface.Name.Value] = iface
+				definitions["iface::"+iface.Name.Value] = iface
 			}
 		}
 
 		return nil
 	})
+
+	return definitions, resolverPaths, err
 }
