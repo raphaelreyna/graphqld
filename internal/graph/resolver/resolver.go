@@ -20,20 +20,26 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 	var (
 		takesArgs  = 0 < len(field.Args)
 		scriptName = filepath.Base(path)
+		objName    = filepath.Base(filepath.Dir(path))
+		fieldName  = field.Name
 	)
 
 	parseOutput, err := newOutputParser(field.Type)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"NewFieldResolveFn:: error creating output parser for field %s: %w",
-			field.Name, err,
+			fieldName, err,
 		)
 	}
 
 	var f = func(p graphql.ResolveParams) (interface{}, error) {
 		var (
+			ctx = p.Context
+
 			args      = make([]string, 0)
 			namedArgs = make(map[string]*graphql.Argument)
+
+			logger = http.GetLogger(ctx)
 		)
 
 		for _, arg := range field.Args {
@@ -56,13 +62,18 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 		if p.Source != nil {
 			source, err := json.Marshal(p.Source)
 			if err != nil {
+				logger.Warn().Err(err).
+					Str("object", objName).
+					Str("field", fieldName).
+					Msg("error encoding resolver source as JSON")
+
 				return nil, err
 			}
 
 			cmd.Stdin = bytes.NewReader(source)
 		}
 
-		env := http.GetEnv(p.Context)
+		env := http.GetEnv(ctx)
 		env = append(env,
 			"SCRIPT_NAME="+scriptName,
 			"SCRIPT_FILENAME="+path,
@@ -79,10 +90,20 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 
 		output, err := cmd.Output()
 		if err != nil {
+			logEvent := logger.Warn().Err(err).
+				Str("object", objName).
+				Str("field", fieldName).
+				Str("resolver", path).
+				Str("resolver-dir", wd)
+
 			exitErr, ok := err.(*exec.ExitError)
 			if !ok {
+				logEvent.Msg("unable to run resolver")
 				return nil, err
 			}
+
+			logEvent.Msg("resolver reported error")
+
 			return nil, errors.New(string(exitErr.Stderr))
 		}
 
@@ -97,6 +118,11 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 
 			header, err := tpReader.ReadMIMEHeader()
 			if err != nil && !errors.Is(err, io.EOF) {
+				logger.Warn().Err(err).
+					Str("object", objName).
+					Str("field", fieldName).
+					Msg("unable to read MIME Header from resolver output")
+
 				return nil, err
 			}
 

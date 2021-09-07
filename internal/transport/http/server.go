@@ -13,8 +13,11 @@ import (
 	"github.com/friendsofgo/graphiql"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/rs/zerolog/hlog"
 	"github.com/rs/zerolog/log"
 )
+
+var logHandler = hlog.NewHandler(log.Logger)
 
 type Server struct {
 	Addr string
@@ -38,7 +41,10 @@ type Server struct {
 	sync.RWMutex
 }
 
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
+	var logger = hlog.FromRequest(r)
+	logger.Info().Msg("got HTTP request")
+
 	if r.URL.Path == "/graphiql" {
 		if s.graphiqlHandler != nil {
 			s.graphiqlHandler.ServeHTTP(w, r)
@@ -63,6 +69,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	)
 	ctx = context.WithValue(ctx, keyHeaderFunc, w.Header)
 	ctx = context.WithValue(ctx, keyEnv, env)
+	ctx = context.WithValue(ctx, keyLog, logger)
 
 	var params = graphql.Params{
 		RequestString:  opts.Query,
@@ -78,7 +85,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.CtxPath != "" {
 		ctxFile, err := ioutil.TempFile(s.CtxFilesDir, "")
 		if err != nil {
-			log.Error().Err(err).
+			logger.Error().Err(err).
 				Msg("unable to create temporary context file")
 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -97,7 +104,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		ctxData, err := cmd.Output()
 		if err != nil {
-			log.Error().Err(err).
+			logger.Error().Err(err).
 				Msg("unable to create a context from the ctx handler")
 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -106,7 +113,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if _, err := ctxFile.Write(ctxData); err != nil {
-			log.Error().Err(err).
+			logger.Error().Err(err).
 				Msg("unable to write context to the context file")
 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -121,10 +128,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(result); err != nil {
-		log.Error().Err(err).
+		logger.Error().Err(err).
 			Interface("result", *result).
 			Msg("unable to encode result")
 	}
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.serveHTTP(w, r)
 }
 
 func (s *Server) Start() error {

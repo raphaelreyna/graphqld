@@ -13,7 +13,7 @@ require (
 	github.com/graphql-go/handler v0.2.3
 	github.com/matryer/is v1.4.0
 	github.com/radovskyb/watcher v1.0.7 // indirect
-	github.com/rs/zerolog v1.23.0 // indirect
+	github.com/rs/zerolog v1.24.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.8.1 // indirect

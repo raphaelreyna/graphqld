@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/rs/zerolog"
 )
 
 type key uint
@@ -16,7 +18,18 @@ const (
 	keyHeader
 	keyEnv
 	keyCtxFile
+	keyLog
 )
+
+func GetLogger(ctx context.Context) *zerolog.Logger {
+	logger := ctx.Value(keyLog).(*zerolog.Logger)
+	if logger == nil {
+		nop := zerolog.Nop()
+		logger = &nop
+	}
+
+	return logger
+}
 
 func GetCtxFile(ctx context.Context) *os.File {
 	file, _ := ctx.Value(keyCtxFile).(*os.File)
