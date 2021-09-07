@@ -34,7 +34,7 @@ func (w *fileWatcher) Run() error {
 			select {
 			case <-w.w.Event:
 				g := graph.Graph{
-					Dir: w.RootDir,
+					DocumentRoot: w.RootDir,
 				}
 
 				if err := g.Build(); err != nil {

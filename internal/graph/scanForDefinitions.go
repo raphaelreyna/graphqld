@@ -15,7 +15,7 @@ func (g *Graph) scanForDefinitions() error {
 		g.resolverPaths = make(map[string]map[string]string)
 	}
 
-	return filepath.WalkDir(g.Dir, func(path string, d fs.DirEntry, err error) error {
+	return filepath.WalkDir(g.DocumentRoot, func(path string, d fs.DirEntry, err error) error {
 		if d.IsDir() {
 			return nil
 		}

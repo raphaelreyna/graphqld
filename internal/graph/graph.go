@@ -10,8 +10,8 @@ import (
 var ErrorNoRoots = errors.New("no root query or mutation directories found")
 
 type Graph struct {
-	Dir        string
-	ResolverWD string
+	DocumentRoot string
+	ResolverDir  string
 
 	definitions map[string]interface{}
 
@@ -58,7 +58,7 @@ func (g *Graph) Build() error {
 
 		for fieldName, resolverPath := range resolverPaths {
 			var field = fields[fieldName]
-			resolver, err := resolver.NewFieldResolveFn(resolverPath, "/", field)
+			resolver, err := resolver.NewFieldResolveFn(resolverPath, g.ResolverDir, field)
 			if err != nil {
 				return err
 			}

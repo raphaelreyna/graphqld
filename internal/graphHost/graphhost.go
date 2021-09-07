@@ -15,28 +15,31 @@ import (
 type GraphHost struct {
 	Config config.GraphConf
 
-	Graph   graph.Graph
-	Watcher fileWatcher
-	Server  httputil.Server
+	Graph graph.Graph
+
+	watcher fileWatcher
+	server  httputil.Server
 }
 
 func NewGraphHost(addr string, config config.GraphConf) (*GraphHost, error) {
 	var gh = GraphHost{
 		Config: config,
-		Server: httputil.Server{},
+		server: httputil.Server{
+			HotReload: config.HotReload,
+		},
 		Graph: graph.Graph{
-			Dir:        config.DocumentRoot,
-			ResolverWD: config.ResolverDir,
+			DocumentRoot: config.DocumentRoot,
+			ResolverDir:  config.ResolverDir,
 		},
 	}
 
-	gh.Server.Schema = make(chan graphql.Schema, 1)
-	gh.Server.Addr = addr
-	gh.Server.CtxPath = gh.Config.ContextExecPath
-	gh.Server.CtxFilesDir = gh.Config.ContextFilesDir
+	gh.server.Schema = make(chan graphql.Schema, 1)
+	gh.server.Addr = addr
+	gh.server.CtxPath = gh.Config.ContextExecPath
+	gh.server.CtxFilesDir = gh.Config.ContextFilesDir
 
 	if gh.Config.Graphiql {
-		gh.Server.GraphiQL = "/graphiql"
+		gh.server.GraphiQL = "/graphiql"
 	}
 
 	if err := gh.Graph.Build(); err != nil {
@@ -62,29 +65,29 @@ func NewGraphHost(addr string, config config.GraphConf) (*GraphHost, error) {
 			return nil, err
 		}
 
-		gh.Server.Schema <- schema
+		gh.server.Schema <- schema
 	}
 
 	if gh.Config.HotReload {
-		gh.Watcher = fileWatcher{
+		gh.watcher = fileWatcher{
 			RootDir:  gh.Config.DocumentRoot,
 			Interval: time.Second,
-			Schema:   gh.Server.Schema,
-			ServerMu: &gh.Server.RWMutex,
+			Schema:   gh.server.Schema,
+			ServerMu: &gh.server.RWMutex,
 		}
 
-		go gh.Watcher.Run()
+		go gh.watcher.Run()
 	}
 
-	gh.Server.Start()
+	gh.server.Start()
 
 	return &gh, nil
 }
 
 func (gh *GraphHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	gh.Server.ServeHTTP(w, r)
+	gh.server.ServeHTTP(w, r)
 }
 
 func (gh *GraphHost) Stop() {
-	gh.Server.Stop()
+	gh.server.Stop()
 }
