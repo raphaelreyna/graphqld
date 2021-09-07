@@ -7,7 +7,6 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/raphaelreyna/graphqld/internal/graph"
-	"github.com/raphaelreyna/graphqld/internal/reload"
 	httputil "github.com/raphaelreyna/graphqld/internal/transport/http"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -17,7 +16,7 @@ type GraphHost struct {
 	Config config.GraphConf
 
 	Graph   graph.Graph
-	Watcher reload.Watcher
+	Watcher fileWatcher
 	Server  httputil.Server
 }
 
@@ -67,7 +66,7 @@ func NewGraphHost(addr string, config config.GraphConf) (*GraphHost, error) {
 	}
 
 	if gh.Config.HotReload {
-		gh.Watcher = reload.Watcher{
+		gh.Watcher = fileWatcher{
 			RootDir:  gh.Config.DocumentRoot,
 			Interval: time.Second,
 			Schema:   gh.Server.Schema,

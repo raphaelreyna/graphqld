@@ -1,4 +1,4 @@
-package reload
+package graphhost
 
 import (
 	"sync"
@@ -10,7 +10,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type Watcher struct {
+type fileWatcher struct {
 	RootDir  string
 	Interval time.Duration
 
@@ -20,7 +20,7 @@ type Watcher struct {
 	w *watcher.Watcher
 }
 
-func (w *Watcher) Run() error {
+func (w *fileWatcher) Run() error {
 	w.w = watcher.New()
 	w.w.SetMaxEvents(1)
 	w.w.FilterOps(
@@ -77,6 +77,6 @@ func (w *Watcher) Run() error {
 	return w.w.Start(w.Interval)
 }
 
-func (w *Watcher) Stop() {
+func (w *fileWatcher) Stop() {
 	w.w.Close()
 }
