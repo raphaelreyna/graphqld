@@ -100,5 +100,4 @@ Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAM
 
 # Still missing...
 - support for defining interfaces
-- support for defining enums
 - a lot of other things, this is still a pretty early stage project
