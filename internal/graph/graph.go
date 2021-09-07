@@ -1,84 +1,78 @@
 package graph
 
 import (
-	"fmt"
-	"path/filepath"
-	"strings"
+	"errors"
 
 	"github.com/graphql-go/graphql"
-	"github.com/raphaelreyna/graphqld/internal/objdef"
+	"github.com/raphaelreyna/graphqld/internal/graph/resolver"
 )
+
+var ErrorNoRoots = errors.New("no root query or mutation directories found")
 
 type Graph struct {
 	Dir        string
 	ResolverWD string
 
-	tm                  map[string]*graphql.Object
-	uninstantiatedTypes map[string]interface{}
-	typeReferences      []*typeReference
+	definitions map[string]interface{}
 
-	im                   map[string]graphql.Input
-	uninstantiatedInputs map[string]interface{}
-	inputReferences      []*inputReference
+	resolverPaths map[string]map[string]string
 
-	objDefs    map[string]*objdef.ObjectDefinition
-	inputConfs map[string]*graphql.InputObjectConfig
+	enums   map[string]*graphql.Enum
+	inputs  map[string]*graphql.InputObject
+	objects map[string]*graphql.Object
 
-	Query    *objdef.ObjectDefinition
-	Mutation *objdef.ObjectDefinition
+	Query    *graphql.Object
+	Mutation *graphql.Object
 }
 
-type typeWrapper uint
-
-const (
-	twNone = iota
-	twNonNull
-	twList
-)
-
-type typeReference struct {
-	referencingDir       string
-	referencingType      string
-	referencingFieldName string
-	referer              interface{}
-	referencedType       string
-	typeWrapper          typeWrapper
-}
-
-type inputWrapper uint
-
-const (
-	iwNone = iota
-	iwNonNull
-	iwList
-)
-
-type inputReference struct {
-	referencingDir       string
-	referencingType      string
-	referencingFieldName string
-	referencingArgName   string
-	referer              interface{}
-	referencedInput      string
-	inputStack           string
-	inputWrapper         inputWrapper
-}
-
-func (ir *inputReference) key(name string) string {
-	return fmt.Sprintf(
-		"@%s::%s::%s::%s",
-		ir.referencingType, ir.referencingFieldName,
-		ir.referencingArgName, ir.inputStack+name,
-	)
-}
-
-func (ir *inputReference) dir() string {
-	var s = ir.referencingDir
-
-	stack := strings.Split(ir.inputStack, ":")
-	for _, input := range stack {
-		s = filepath.Join(s, input)
+func (g *Graph) Build() error {
+	if err := g.scanForDefinitions(); err != nil {
+		return err
 	}
 
-	return filepath.Join(s, ir.referencedInput)
+	if err := g.instantiateEnums(); err != nil {
+		return err
+	}
+
+	if err := g.instantiateInputs(); err != nil {
+		return err
+	}
+
+	if err := g.instantiateObjects(); err != nil {
+		return err
+	}
+
+	if q := g.objects["Query"]; 0 < len(q.Fields()) {
+		g.Query = q
+	}
+	if m := g.objects["Mutation"]; 0 < len(m.Fields()) {
+		g.Mutation = m
+	}
+
+	if g.Query == nil && g.Mutation == nil {
+		return ErrorNoRoots
+	}
+
+	for objName, resolverPaths := range g.resolverPaths {
+		var fields = g.objects[objName].Fields()
+
+		for fieldName, resolverPath := range resolverPaths {
+			var field = fields[fieldName]
+			resolver, err := resolver.NewFieldResolveFn(resolverPath, "/", field)
+			if err != nil {
+				return err
+			}
+
+			field.Resolve = *resolver
+		}
+	}
+
+	g.definitions = nil
+	g.resolverPaths = nil
+	g.objects = nil
+	g.resolverPaths = nil
+	g.inputs = nil
+	g.enums = nil
+
+	return nil
 }

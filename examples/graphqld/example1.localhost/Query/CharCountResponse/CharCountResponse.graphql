@@ -1,4 +1,0 @@
-type CharCountResponse {
-    string: String!
-    count: Int!
-}

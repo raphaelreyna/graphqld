@@ -98,6 +98,25 @@ func init() {
 	Config.Graphiql = viper.GetBool("graphiql")
 	Config.ResolverDir = viper.GetString("resolverDir")
 
+	if !filepath.IsAbs(Config.RootDir) {
+		path, err := filepath.Abs(Config.RootDir)
+		if err != nil {
+			log.Fatal().Err(err).
+				Str("path", Config.RootDir).
+				Msg("unable to compute absolute rooth path")
+		}
+		Config.RootDir = path
+	}
+	if !filepath.IsAbs(Config.ResolverDir) {
+		path, err := filepath.Abs(Config.ResolverDir)
+		if err != nil {
+			log.Fatal().Err(err).
+				Str("path", Config.ResolverDir).
+				Msg("unable to compute resolver dir root path")
+		}
+		Config.ResolverDir = path
+	}
+
 	if Config.Addr == "" {
 		Config.Addr = ":" + viper.GetString("port")
 	}
@@ -132,16 +151,40 @@ func init() {
 					gc.graphiqlSet = true
 				}
 
-				if x, ok := m["resolverWD"]; ok {
-					gc.ResolverDir = x.(string)
-				}
-
 				if x, ok := m["contextExecPath"]; ok {
 					gc.ContextExecPath = x.(string)
 				}
 
 				if x, ok := m["contextFilesDir"]; ok {
 					gc.ContextFilesDir = x.(string)
+				}
+
+				if !filepath.IsAbs(gc.ResolverDir) && gc.ResolverDir != "" {
+					path, err := filepath.Abs(gc.ResolverDir)
+					if err != nil {
+						log.Fatal().Err(err).
+							Str("path", gc.ResolverDir).
+							Msg("unable to compute resolver dir root path")
+					}
+					gc.ResolverDir = path
+				}
+				if !filepath.IsAbs(gc.ContextExecPath) && gc.ContextExecPath != "" {
+					path, err := filepath.Abs(gc.ContextExecPath)
+					if err != nil {
+						log.Fatal().Err(err).
+							Str("path", gc.ContextExecPath).
+							Msg("unable to compute absolute rooth path")
+					}
+					gc.ContextExecPath = path
+				}
+				if !filepath.IsAbs(gc.ContextFilesDir) && gc.ContextFilesDir != "" {
+					path, err := filepath.Abs(gc.ContextFilesDir)
+					if err != nil {
+						log.Fatal().Err(err).
+							Str("path", gc.ContextFilesDir).
+							Msg("unable to compute absolute rooth path")
+					}
+					gc.ContextFilesDir = path
 				}
 
 				confGraphs[gc.ServerName] = gc

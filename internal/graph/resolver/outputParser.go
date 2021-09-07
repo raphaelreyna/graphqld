@@ -192,8 +192,8 @@ func newOutputParser(outputType graphql.Output) (outputParser, error) {
 	}
 }
 
-func argStringFromValue(argConf *graphql.ArgumentConfig, name string, v interface{}) (string, error) {
-	switch x := argConf.Type.(type) {
+func argStringFromValue(t graphql.Type, name string, v interface{}) (string, error) {
+	switch x := t.(type) {
 	case *graphql.NonNull:
 		switch x := x.OfType.(type) {
 		case *graphql.Scalar:
@@ -234,7 +234,7 @@ func argStringFromValue(argConf *graphql.ArgumentConfig, name string, v interfac
 			return string(data), nil
 		}
 	case *graphql.Scalar:
-		switch argConf.Type {
+		switch t {
 		case graphql.ID:
 			fallthrough
 		case graphql.String:

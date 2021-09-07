@@ -16,15 +16,10 @@ import (
 	"github.com/raphaelreyna/graphqld/internal/transport/http"
 )
 
-type key uint
-
-const (
-	ctxKey key = iota
-)
-
-func NewFieldResolveFn(root, path, wd string, field *graphql.Field) (*graphql.FieldResolveFn, error) {
+func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphql.FieldResolveFn, error) {
 	var (
-		takesArgs = 0 < len(field.Args)
+		takesArgs  = 0 < len(field.Args)
+		scriptName = filepath.Base(path)
 	)
 
 	parseOutput, err := newOutputParser(field.Type)
@@ -35,22 +30,20 @@ func NewFieldResolveFn(root, path, wd string, field *graphql.Field) (*graphql.Fi
 		)
 	}
 
-	scriptName, err := filepath.Rel(root, path)
-	if err != nil {
-		return nil, fmt.Errorf(
-			"NewFieldResolveFn:: unable to compute script_name env var: %w", err,
-		)
-	}
-
 	var f = func(p graphql.ResolveParams) (interface{}, error) {
 		var (
-			args = []string{}
+			args      = make([]string, 0)
+			namedArgs = make(map[string]*graphql.Argument)
 		)
+
+		for _, arg := range field.Args {
+			namedArgs[arg.Name()] = arg
+		}
 
 		if takesArgs {
 			for name, arg := range p.Args {
-				argInfo := field.Args[name]
-				argStr, err := argStringFromValue(argInfo, name, arg)
+				argType := namedArgs[name].Type
+				argStr, err := argStringFromValue(argType, name, arg)
 				if err != nil {
 					return nil, err
 				}

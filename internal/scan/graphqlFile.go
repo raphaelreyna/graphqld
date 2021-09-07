@@ -1,75 +1,32 @@
 package scan
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 )
 
-type GraphQLFile struct {
-	path    string
-	objects []*ast.ObjectDefinition
-	inputs  []*ast.InputObjectDefinition
+type GraphqlFile struct {
+	Dir, Name string
+
+	Objects    []*ast.ObjectDefinition
+	Inputs     []*ast.InputObjectDefinition
+	Enums      []*ast.EnumDefinition
+	Interfaces []*ast.InterfaceDefinition
 }
 
-func (gf *GraphQLFile) Path() string {
-	return gf.path
+func (gf *GraphqlFile) Path() string {
+	return filepath.Join(gf.Dir, gf.Name+".graphql")
 }
 
-var (
-	ErrNoFields = errors.New("file does not contain any object definition with fields")
-	ErrNoInputs = errors.New("file does not contain any object definition with fields")
-)
+func (gf *GraphqlFile) Scan() error {
+	var path = gf.Path()
 
-func (gf *GraphQLFile) Fields() ([]*FieldOutput, error) {
-	if gf.objects == nil {
-		if err := gf.scan(); err != nil {
-			return nil, err
-		}
-	}
-
-	if len(gf.objects) == 0 {
-		return nil, nil
-	}
-
-	fields := []*FieldOutput{}
-	for _, field := range gf.objects[0].Fields {
-		output := FieldOutput{
-			Name:      field.Name.Value,
-			Type:      field.Type,
-			Arguments: field.Arguments,
-		}
-
-		fields = append(fields, &output)
-	}
-
-	return fields, nil
-}
-
-func (gf *GraphQLFile) Input() (*ast.InputObjectDefinition, error) {
-	if gf.inputs == nil {
-		if err := gf.scan(); err != nil {
-			return nil, err
-		}
-	}
-
-	if len(gf.inputs) == 0 {
-		return nil, nil
-	}
-
-	return gf.inputs[0], nil
-}
-
-func (*GraphQLFile) IsExec() bool {
-	return false
-}
-
-func (gf *GraphQLFile) scan() error {
-	file, err := os.OpenFile(gf.path, os.O_RDONLY, os.ModePerm)
+	file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
 	defer func() {
 		if file != nil {
 			file.Close()
@@ -98,19 +55,29 @@ func (gf *GraphQLFile) scan() error {
 		)
 	}
 
-	if gf.objects == nil {
-		gf.objects = []*ast.ObjectDefinition{}
+	if gf.Objects == nil {
+		gf.Objects = []*ast.ObjectDefinition{}
 	}
-	if gf.inputs == nil {
-		gf.inputs = []*ast.InputObjectDefinition{}
+	if gf.Inputs == nil {
+		gf.Inputs = []*ast.InputObjectDefinition{}
+	}
+	if gf.Enums == nil {
+		gf.Enums = []*ast.EnumDefinition{}
+	}
+	if gf.Interfaces == nil {
+		gf.Interfaces = []*ast.InterfaceDefinition{}
 	}
 
 	for _, def := range parsedOutput.Definitions {
 		switch x := def.(type) {
 		case *ast.ObjectDefinition:
-			gf.objects = append(gf.objects, x)
+			gf.Objects = append(gf.Objects, x)
 		case *ast.InputObjectDefinition:
-			gf.inputs = append(gf.inputs, x)
+			gf.Inputs = append(gf.Inputs, x)
+		case *ast.EnumDefinition:
+			gf.Enums = append(gf.Enums, x)
+		case *ast.InterfaceDefinition:
+			gf.Interfaces = append(gf.Interfaces, x)
 		default:
 			return fmt.Errorf("unsupported definition type: %T %v", def, def)
 		}

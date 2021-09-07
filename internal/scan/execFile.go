@@ -2,49 +2,54 @@ package scan
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
 )
 
-type execFile struct {
-	path string
+var ErrNotAResolver = errors.New("not a resolver")
+
+type ExecFile struct {
+	Dir, Name, Ext string
+
+	ObjectName string
+	Fields     []*ast.FieldDefinition
 }
 
-func (ef execFile) Path() string {
-	return ef.path
+func (ef *ExecFile) Path() string {
+	return filepath.Join(ef.Dir, ef.Name+ef.Ext)
 }
 
-func (ef execFile) Fields() ([]*FieldOutput, error) {
-	var fieldStrings []string
+func (ef *ExecFile) Scan() error {
+	var (
+		path         = ef.Path()
+		fieldStrings []string
+	)
 	// populate fieldStrings
 	{
-		cmd := exec.Command(ef.path, "--cggi-fields")
+		cmd := exec.Command(path, "--cggi-fields")
 		schemaBytes, err := cmd.Output()
 		if err != nil {
-			return nil, fmt.Errorf(
+			return fmt.Errorf(
 				"error executing %s --cggi-fields: %w",
-				ef.path, err,
+				path, ErrNotAResolver,
 			)
 		}
 
 		if err := json.Unmarshal(schemaBytes, &fieldStrings); err != nil {
-			return nil, fmt.Errorf(
+			return fmt.Errorf(
 				"error parsing json output of %s --cggi-fields: %w",
-				ef.path, err,
+				path, err,
 			)
 		}
 	}
 
-	fields := make([]*FieldOutput, len(fieldStrings))
-
 	// parse field strings
-	var (
-		astFieldDefs []*ast.FieldDefinition
-	)
 	{
 		parsedOutput, err := parser.Parse(parser.ParseParams{
 			Source: fmt.Sprintf(
@@ -53,42 +58,29 @@ func (ef execFile) Fields() ([]*FieldOutput, error) {
 			),
 		})
 		if err != nil {
-			return nil, fmt.Errorf(
+			return fmt.Errorf(
 				"error parsing fields returned by %s: %w",
-				ef.path, err,
+				path, err,
 			)
 		}
 
 		if len(parsedOutput.Definitions) != 1 {
-			return nil, fmt.Errorf(
+			return fmt.Errorf(
 				"error parsing fields returned by %s: expected 1 definition",
-				ef.path,
+				path,
 			)
 		}
 
 		objDef, ok := parsedOutput.Definitions[0].(*ast.ObjectDefinition)
 		if !ok {
-			return nil, fmt.Errorf(
+			return fmt.Errorf(
 				"error parsing fields returned by %s: no object definition found",
-				ef.path,
+				path,
 			)
 		}
 
-		astFieldDefs = objDef.Fields
+		ef.Fields = objDef.Fields
 	}
 
-	for idx, field := range astFieldDefs {
-		fields[idx] = &FieldOutput{
-			Name:      field.Name.Value,
-			Type:      field.Type,
-			Arguments: field.Arguments,
-			Raw:       fieldStrings[idx],
-		}
-	}
-
-	return fields, nil
-}
-
-func (execFile) IsExec() bool {
-	return true
+	return nil
 }

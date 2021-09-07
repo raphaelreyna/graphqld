@@ -52,10 +52,10 @@ func NewGraphHost(addr string, config config.GraphConf) (*GraphHost, error) {
 	} else {
 		var schemaConf graphql.SchemaConfig
 		if q := gh.Graph.Query; q != nil {
-			schemaConf.Query = graphql.NewObject(q.ObjectConf)
+			schemaConf.Query = q
 		}
 		if m := gh.Graph.Mutation; m != nil {
-			schemaConf.Mutation = graphql.NewObject(m.ObjectConf)
+			schemaConf.Mutation = m
 		}
 
 		schema, err := graphql.NewSchema(schemaConf)

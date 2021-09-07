@@ -45,10 +45,10 @@ func (w *Watcher) Run() error {
 
 				var schemaConf graphql.SchemaConfig
 				if q := g.Query; q != nil {
-					schemaConf.Query = graphql.NewObject(q.ObjectConf)
+					schemaConf.Query = q
 				}
 				if m := g.Mutation; m != nil {
-					schemaConf.Mutation = graphql.NewObject(m.ObjectConf)
+					schemaConf.Mutation = m
 				}
 
 				schm, err := graphql.NewSchema(schemaConf)
