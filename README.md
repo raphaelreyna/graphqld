@@ -1,4 +1,6 @@
-![graphqld](https://raw.githubusercontent.com/raphaelreyna/graphqld/master/logo/graphqld.svg)
+<img src="https://raw.githubusercontent.com/raphaelreyna/graphqld/master/logo/graphqld.png" width="500" height="130">
+
+
 # graphqld
 Do you miss being able to throw CGI scripts into an FTP server and call it a day?
 Is GraphQL the only thing holding you back from living in the past?
@@ -98,5 +100,4 @@ Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAM
 
 # Still missing...
 - support for defining interfaces
-- support for defining enums
 - a lot of other things, this is still a pretty early stage project
