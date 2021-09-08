@@ -21,11 +21,12 @@ type GraphHost struct {
 	server  httputil.Server
 }
 
-func NewGraphHost(addr string, config config.GraphConf) (*GraphHost, error) {
+func NewGraphHost(addr string, maxBodySize int64, config config.GraphConf) (*GraphHost, error) {
 	var gh = GraphHost{
 		Config: config,
 		server: httputil.Server{
-			HotReload: config.HotReload,
+			HotReload:   config.HotReload,
+			MaxBodySize: maxBodySize,
 		},
 		Graph: graph.Graph{
 			DocumentRoot: config.DocumentRoot,

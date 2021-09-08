@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -14,14 +16,12 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 	"github.com/rs/zerolog/hlog"
-	"github.com/rs/zerolog/log"
 )
 
-var logHandler = hlog.NewHandler(log.Logger)
-
 type Server struct {
-	Addr string
-	Name string
+	Addr        string
+	Name        string
+	MaxBodySize int64
 
 	Schema chan graphql.Schema
 
@@ -44,21 +44,6 @@ type Server struct {
 func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	var logger = hlog.FromRequest(r)
 	logger.Info().Msg("got HTTP request")
-
-	if r.URL.Path == "/graphiql" {
-		if s.graphiqlHandler != nil {
-			s.graphiqlHandler.ServeHTTP(w, r)
-			return
-		}
-
-		w.WriteHeader(http.StatusNotFound)
-		return
-	}
-
-	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
 
 	var (
 		ctx = r.Context()
@@ -135,6 +120,28 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/graphiql" {
+		if s.graphiqlHandler != nil {
+			s.graphiqlHandler.ServeHTTP(w, r)
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	r.Body = &limitedReaderCloser{
+		LimitedReader: io.LimitedReader{
+			R: r.Body,
+			N: s.MaxBodySize,
+		},
+	}
+
 	s.serveHTTP(w, r)
 }
 
@@ -174,4 +181,21 @@ func (s *Server) Start() error {
 
 func (s *Server) Stop() {
 	s.close <- struct{}{}
+}
+
+type limitedReaderCloser struct {
+	io.LimitedReader
+}
+
+func (lrc *limitedReaderCloser) Read(p []byte) (int, error) {
+	return lrc.LimitedReader.Read(p)
+}
+
+func (lrc *limitedReaderCloser) Close() error {
+	x, ok := lrc.R.(io.Closer)
+	if !ok {
+		return errors.New("unable to convert from type io.Reader to io.Closer in limitedReaderCloser.Close")
+	}
+
+	return x.Close()
 }

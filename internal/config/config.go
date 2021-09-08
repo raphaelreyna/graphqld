@@ -36,6 +36,7 @@ type Conf struct {
 	Graphiql        bool
 	ContextExecPath string
 	ContextFilesDir string
+	MaxBodyReadSize int64
 	Graphs          []GraphConf
 }
 
@@ -52,6 +53,7 @@ func init() {
 		"RESOLVERDIR", "RESOLVER_DIR",
 		"LOGJSON", "LOG_JSON",
 		"LOGCOLOR", "LOG_COLOR",
+		"MAXBODYSIZE", "MAX_BODY_SIZE",
 	))
 
 	viper.SetEnvPrefix("GRAPHQLD")
@@ -69,6 +71,7 @@ func init() {
 	viper.SetDefault("logJSON", false)
 	viper.SetDefault("logColor", true)
 	viper.SetDefault("resolverDir", "/")
+	viper.SetDefault("maxBodySize", 1<<20) // 1 MB
 
 	if !viper.GetBool("logJSON") {
 		log.Logger = log.Output(zerolog.ConsoleWriter{
@@ -97,6 +100,7 @@ func init() {
 	Config.HotReload = viper.GetBool("hot")
 	Config.Graphiql = viper.GetBool("graphiql")
 	Config.ResolverDir = viper.GetString("resolverDir")
+	Config.MaxBodyReadSize = viper.GetInt64("maxBodySize")
 
 	if !filepath.IsAbs(Config.RootDir) {
 		path, err := filepath.Abs(Config.RootDir)

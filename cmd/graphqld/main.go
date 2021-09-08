@@ -51,7 +51,7 @@ func main() {
 	}
 
 	for _, g := range c.Graphs {
-		gh, err := graphhost.NewGraphHost(c.Addr, g)
+		gh, err := graphhost.NewGraphHost(c.Addr, c.MaxBodyReadSize, g)
 		if err != nil {
 			log.Fatal().Err(err).
 				Msg("error creating new graph host")
