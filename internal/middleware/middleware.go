@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -219,4 +220,49 @@ func (lrc *limitedReaderCloser) Close() error {
 	}
 
 	return x.Close()
+}
+
+func BasicAuth(username, password string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var (
+				h      = r.Header.Get("Authorization")
+				hParts = strings.Split(h, " ")
+			)
+
+			if len(hParts) < 2 {
+				status := http.StatusUnauthorized
+				http.Error(w, http.StatusText(status), status)
+				return
+			}
+
+			if hParts[0] != "Basic" {
+				status := http.StatusUnauthorized
+				http.Error(w, http.StatusText(status), status)
+				return
+			}
+
+			decodedBytes, err := base64.StdEncoding.DecodeString(hParts[1])
+			if err != nil {
+				status := http.StatusUnauthorized
+				http.Error(w, http.StatusText(status), status)
+				return
+			}
+
+			var authParts = strings.Split(string(decodedBytes), ":")
+			if len(authParts) < 2 {
+				status := http.StatusUnauthorized
+				http.Error(w, http.StatusText(status), status)
+				return
+			}
+
+			if authParts[0] != username || authParts[1] != password {
+				status := http.StatusUnauthorized
+				http.Error(w, http.StatusText(status), status)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

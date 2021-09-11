@@ -102,6 +102,12 @@ func newServer(addr string, mux *mux.Router, conf config.GraphConf) (*server, er
 
 	mux.Use(middleware.FromGraphConf(conf))
 
+	if ba := conf.BasicAuth; ba != nil {
+		mux.Use(
+			middleware.BasicAuth(ba.Username, ba.Password),
+		)
+	}
+
 	mux.HandleFunc("/", s.serveHTTP)
 
 	return &s, nil

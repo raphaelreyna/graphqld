@@ -1,0 +1,4 @@
+input PythonInputTwo {
+    IncludeVersion: Boolean!
+    Status: Status
+}
