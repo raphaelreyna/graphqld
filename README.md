@@ -74,6 +74,107 @@ To enable this, simply set `GRAPHQLD_HOT_RELOAD=TRUE`.
 ### GraphiQL
 To enable the built-in GraphiQL server at `/graphiql`, simply set `GRAPHQLD_GRAPHIQL=TRUE`.
 
+# Configuration
+```yaml
+# hostname is ignored if serving multiple graphs;
+# each graphs serverName will be used instead.
+#
+# Default: ""
+hostname: "localhost"
+
+# address is the address:port that graphqld will bind to.
+#
+# Default: 80
+address: ":8082"
+
+# root is the dir where graphqld will look for its graph(s)
+# Single graph: the root dir should contain a dir name Query or Mutation or both
+# Multiple graphs: each graph in its own dir with that graphs servername / hostname as the dir name.
+#
+# Default: "."
+root: "./graphqld"
+
+# hot enables global hot reloading; this can be overriden 
+# by each graph config in the graphs section.
+#
+# Default: false
+hot: false
+
+# graphiql enables a graphiql server for each graph at "/graphiql"; this can be overriden
+# by each graph config in the graphs section.
+#
+# Default: false
+graphiql: false
+
+# resolverWD is the default working directory for resolvers; this can be overriden
+# by each graph config in the graphs section.
+#
+# Default: "/"
+resolverWD: "."
+
+# If basicAuth is set, graphqld will expect the HTTP header
+# Authorization: Basic <BASE-64>
+# where <BASE-64> is the base64 encoding of username:password
+basicAuth:
+  username: "test"
+  password: "test"
+
+#cors:
+#  allowCredentials: true
+#  allowedHeaders:
+#    - "Host"
+#  allowedOrigins:
+#    - "localhost"
+#    - "127.0.0.1"
+#  ignoreOptions: true
+
+#tls:
+#  cert: "path/to/cert/file"
+#  key: "path/to/key/file"
+
+# context allows for a static context to be passed to the resolvers.
+# this should be marshalable as JSON.
+# this context is ignored if execPath is not empty.
+#context:
+   # execPath is the path to an executable that will read the request
+   # and return some json as the context to be passed to the resolvers.
+#  execPath: ""
+
+   # tmpDir is where the context file for each request will be written to
+   # defaults to your tmp dir
+#  tmpDir: ""
+
+   # context allows for a static context to be passed to the resolvers.
+   # this should be marshalable as JSON.
+   # this context is ignored if execPath is not empty.
+#  context:
+
+# graphs is a list of graph specific configurations.
+# Each graphs serverName must match the name of the graphs directory in the root dir.
+#
+# This section is ignored if there is only one graph in the root dir; 
+# root level defaults will be applied instead.
+graphs:
+  - serverName: "example1.localhost"
+    graphiql: true
+    hot: false
+    workingDir: "."
+    context:
+      execPath: "./example1.localhost/auth.py"
+#     context:
+#       loggedIn: true
+#       user:
+#         name: "yaml"
+    cors:
+      allowCredentials: true
+      allowedHeaders:
+        - "Host"
+      allowedOrigins:
+        - "localhost"
+        - "127.0.0.1"
+      ignoreOptions: true
+
+```
 
 # How it works
 The graph is built scanning the given directory and querying each executable for its fields:
