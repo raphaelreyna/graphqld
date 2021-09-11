@@ -1,0 +1,23 @@
+hostname: "localhost"
+address: ":8082"
+root: "./examples/graphqld"
+hot: false
+graphiql: false
+resolverWD: "."
+#contextExecPath: ""
+#contextFilesDir: ""
+graphs:
+  - serverName: "example1.localhost"
+    graphiql: true
+    hot: false
+    workingDir: "."
+    #contextExecPath: ""
+    #contextFilesDir: ""
+    cors:
+      allowCredentials: true
+      allowedHeaders:
+        - "Host"
+      allowedOrigins:
+        - "localhost"
+        - "127.0.0.1"
+      ignoreOptions: true

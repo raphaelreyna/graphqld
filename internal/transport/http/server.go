@@ -13,8 +13,10 @@ import (
 	"sync"
 
 	"github.com/friendsofgo/graphiql"
+	"github.com/gorilla/handlers"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/rs/zerolog/hlog"
 )
 
@@ -22,6 +24,8 @@ type Server struct {
 	Addr        string
 	Name        string
 	MaxBodySize int64
+
+	CORS *config.CORSConfig
 
 	Schema chan graphql.Schema
 
@@ -32,6 +36,8 @@ type Server struct {
 
 	GraphiQL        string
 	graphiqlHandler *graphiql.Handler
+
+	handler http.Handler
 
 	close chan struct{}
 
@@ -142,7 +148,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		},
 	}
 
-	s.serveHTTP(w, r)
+	s.handler.ServeHTTP(w, r)
 }
 
 func (s *Server) Start() error {
@@ -153,6 +159,34 @@ func (s *Server) Start() error {
 		return err
 	}
 	s.port = port
+
+	s.handler = http.HandlerFunc(s.serveHTTP)
+
+	if cc := s.CORS; cc != nil {
+		var opts = make([]handlers.CORSOption, 0)
+
+		if cc.AllowCredentials {
+			opts = append(opts, handlers.AllowCredentials())
+		}
+
+		if cc.IgnoreOptions {
+			opts = append(opts, handlers.IgnoreOptions())
+		}
+
+		if 0 < len(cc.AllowedHeaders) {
+			opts = append(opts,
+				handlers.AllowedHeaders(cc.AllowedHeaders),
+			)
+		}
+
+		if 0 < len(cc.AllowedOrigins) {
+			opts = append(opts,
+				handlers.AllowedOrigins(cc.AllowedOrigins),
+			)
+		}
+
+		s.handler = handlers.CORS(opts...)(s.handler)
+	}
 
 	go func() {
 		for run := true; run; {
