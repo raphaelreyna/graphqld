@@ -135,6 +135,7 @@ type GraphConf struct {
 	graphiqlSet     bool
 	ContextExecPath string
 	ContextFilesDir string
+	MaxBodyReadSize int64
 	CORS            *CORSConfig
 }
 
@@ -278,6 +279,10 @@ func init() {
 					gc.ContextFilesDir = x.(string)
 				}
 
+				if x, ok := m["maxBodySize"]; ok {
+					gc.MaxBodyReadSize = x.(int64)
+				}
+
 				if !filepath.IsAbs(gc.ResolverDir) && gc.ResolverDir != "" {
 					path, err := filepath.Abs(gc.ResolverDir)
 					if err != nil {
@@ -347,6 +352,7 @@ func init() {
 				ResolverDir:     viper.GetString("resolverDir"),
 				ContextExecPath: viper.GetString("contextExecPath"),
 				ContextFilesDir: viper.GetString("contextFilesDir"),
+				MaxBodyReadSize: viper.GetInt64("maxBodySize"),
 			}
 
 			if cc := Config.CORS; cc != nil {
@@ -416,6 +422,10 @@ func init() {
 
 		if x := confGraph.ContextFilesDir; x != "" {
 			graph.ContextFilesDir = x
+		}
+
+		if x := confGraph.MaxBodyReadSize; x > 0 {
+			graph.MaxBodyReadSize = x
 		}
 
 		if x := confGraph.CORS; x != nil {

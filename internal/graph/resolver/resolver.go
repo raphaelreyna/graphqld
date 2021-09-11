@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 
 	"github.com/graphql-go/graphql"
-	"github.com/raphaelreyna/graphqld/internal/transport/http"
+	"github.com/raphaelreyna/graphqld/internal/middleware"
 )
 
 func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphql.FieldResolveFn, error) {
@@ -39,7 +39,7 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 			args      = make([]string, 0)
 			namedArgs = make(map[string]*graphql.Argument)
 
-			logger = http.GetLogger(ctx)
+			logger = middleware.GetLogger(ctx)
 		)
 
 		for _, arg := range field.Args {
@@ -73,14 +73,14 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 			cmd.Stdin = bytes.NewReader(source)
 		}
 
-		env := http.GetEnv(ctx)
+		env := middleware.GetEnv(ctx)
 		env = append(env,
 			"SCRIPT_NAME="+scriptName,
 			"SCRIPT_FILENAME="+path,
 		)
 		cmd.Env = env
 
-		if ctxFile := http.GetCtxFile(p.Context); ctxFile != nil {
+		if ctxFile := middleware.GetCtxFile(p.Context); ctxFile != nil {
 			cmd.ExtraFiles = []*os.File{ctxFile}
 		}
 
@@ -126,7 +126,7 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 				return nil, err
 			}
 
-			h := http.GetWHeader(p.Context)
+			h := middleware.GetWHeader(p.Context)
 			for k := range header {
 				h.Add(k, header.Get(k))
 			}

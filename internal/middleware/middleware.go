@@ -1,14 +1,20 @@
-package http
+package middleware
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"strings"
 
+	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/hlog"
 )
 
 type key uint
@@ -49,7 +55,76 @@ func GetEnv(ctx context.Context) []string {
 	return ctx.Value(keyEnv).([]string)
 }
 
-func getEnv(port string, r *http.Request) []string {
+func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
+	return func(handler http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var (
+				ctx    = r.Context()
+				logger = hlog.FromRequest(r)
+				env    = getEnv(r)
+			)
+
+			logger.Info().Msg("got HTTP request")
+
+			ctx = context.WithValue(ctx, keyEnv, env)
+			ctx = context.WithValue(ctx, keyHeaderFunc, w.Header)
+			ctx = context.WithValue(ctx, keyLog, logger)
+
+			if ctxPath := c.ContextExecPath; ctxPath != "" {
+				ctxFile, err := ioutil.TempFile(c.ContextFilesDir, "")
+				if err != nil {
+					logger.Error().Err(err).
+						Msg("unable to create temporary context file")
+
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+
+					return
+				}
+				defer func() {
+					ctxFile.Close()
+					os.Remove(ctxFile.Name())
+				}()
+
+				cmd := exec.Cmd{
+					Path: ctxPath,
+					Env:  env,
+				}
+
+				ctxData, err := cmd.Output()
+				if err != nil {
+					logger.Error().Err(err).
+						Msg("unable to create a context from the ctx handler")
+
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+
+					return
+				}
+
+				if _, err := ctxFile.Write(ctxData); err != nil {
+					logger.Error().Err(err).
+						Msg("unable to write context to the context file")
+
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+
+					return
+				}
+
+				ctx = context.WithValue(ctx, keyCtxFile, ctxFile)
+			}
+
+			r.Body = &limitedReaderCloser{
+				LimitedReader: io.LimitedReader{
+					R: r.Body,
+					N: c.MaxBodyReadSize,
+				},
+			}
+
+			handler.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func getEnv(r *http.Request) []string {
 	var (
 		upperCaseAndUnderscore = func(r rune) rune {
 			switch {
@@ -90,8 +165,8 @@ func getEnv(port string, r *http.Request) []string {
 		"HTTP_HOST=" + r.Host,
 		"GATEWAY_INTERFACE=CGGI/1.1",
 		"REQUEST_URI=" + r.URL.RequestURI(),
-		"SERVER_PORT=" + port,
 	}
+
 	if remoteIP, remotePort, err := net.SplitHostPort(r.RemoteAddr); err == nil {
 		env = append(env, "REMOTE_ADDR="+remoteIP, "REMOTE_HOST="+remoteIP, "REMOTE_PORT="+remotePort)
 	} else {
@@ -127,4 +202,21 @@ func getEnv(port string, r *http.Request) []string {
 	env = append(env, "PATH="+envPath)
 
 	return removeLeadingDuplicates(env)
+}
+
+type limitedReaderCloser struct {
+	io.LimitedReader
+}
+
+func (lrc *limitedReaderCloser) Read(p []byte) (int, error) {
+	return lrc.LimitedReader.Read(p)
+}
+
+func (lrc *limitedReaderCloser) Close() error {
+	x, ok := lrc.R.(io.Closer)
+	if !ok {
+		return errors.New("unable to convert from type io.Reader to io.Closer in limitedReaderCloser.Close")
+	}
+
+	return x.Close()
 }

@@ -11,7 +11,7 @@ graphs:
     graphiql: true
     hot: false
     workingDir: "."
-    #contextExecPath: ""
+    contextExecPath: "./examples/graphqld/example1.localhost/auth.py"
     #contextFilesDir: ""
     cors:
       allowCredentials: true

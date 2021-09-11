@@ -10,6 +10,7 @@ require (
 	github.com/friendsofgo/graphiql v0.2.2 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gorilla/handlers v1.5.1
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/graphql-go/graphql v0.7.9
 	github.com/graphql-go/handler v0.2.3
 	github.com/matryer/is v1.4.0
