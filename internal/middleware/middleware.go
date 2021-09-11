@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -71,8 +72,8 @@ func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, keyHeaderFunc, w.Header)
 			ctx = context.WithValue(ctx, keyLog, logger)
 
-			if ctxPath := c.ContextExecPath; ctxPath != "" {
-				ctxFile, err := ioutil.TempFile(c.ContextFilesDir, "")
+			if cctx := c.Context; cctx != nil {
+				ctxFile, err := ioutil.TempFile(cctx.TmpDir, "")
 				if err != nil {
 					logger.Error().Err(err).
 						Msg("unable to create temporary context file")
@@ -86,19 +87,38 @@ func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
 					os.Remove(ctxFile.Name())
 				}()
 
-				cmd := exec.Cmd{
-					Path: ctxPath,
-					Env:  env,
-				}
+				var ctxData []byte
+				switch {
+				case cctx.ExecPath != "":
+					var (
+						cmd = exec.Cmd{
+							Path: cctx.ExecPath,
+							Env:  env,
+						}
+						err error
+					)
 
-				ctxData, err := cmd.Output()
-				if err != nil {
-					logger.Error().Err(err).
-						Msg("unable to create a context from the ctx handler")
+					ctxData, err = cmd.Output()
+					if err != nil {
+						logger.Error().Err(err).
+							Msg("unable to create a context from the ctx handler")
 
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+						http.Error(w, err.Error(), http.StatusInternalServerError)
 
-					return
+						return
+					}
+				case cctx.Context != nil:
+					var err error
+
+					ctxData, err = json.Marshal(cctx.Context)
+					if err != nil {
+						logger.Error().Err(err).
+							Msg("unable to marshal config context as JSON")
+
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+
+						return
+					}
 				}
 
 				if _, err := ctxFile.Write(ctxData); err != nil {
@@ -111,6 +131,7 @@ func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
 				}
 
 				ctx = context.WithValue(ctx, keyCtxFile, ctxFile)
+
 			}
 
 			r.Body = &limitedReaderCloser{

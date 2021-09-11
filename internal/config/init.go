@@ -19,7 +19,7 @@ func init() {
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer(
 		"CONTEXTEXECPATH", "CTX_EXEC_PATH",
-		"CONTEXTFILESDIR", "CTX_FILES_DIR",
+		"CONTEXTTMPDIR", "CTX_TMP_DIR",
 		"RESOLVERDIR", "RESOLVER_DIR",
 		"LOGJSON", "LOG_JSON",
 		"LOGCOLOR", "LOG_COLOR",
@@ -87,8 +87,6 @@ func init() {
 				Graphiql:        viper.GetBool("graphiql"),
 				DocumentRoot:    path,
 				ResolverDir:     viper.GetString("resolverDir"),
-				ContextExecPath: viper.GetString("contextExecPath"),
-				ContextFilesDir: viper.GetString("contextFilesDir"),
 				MaxBodyReadSize: viper.GetInt64("maxBodySize"),
 			}
 
@@ -98,6 +96,10 @@ func init() {
 
 			if ba := Config.BasicAuth; ba != nil {
 				gc.BasicAuth = ba
+			}
+
+			if c := Config.Context; c != nil {
+				gc.Context = c
 			}
 
 			if err := checkDomain(name); err != nil {
@@ -111,12 +113,10 @@ func init() {
 
 		if len(dirGraphs) == 0 {
 			gc := GraphConf{
-				HotReload:       viper.GetBool("hot"),
-				Graphiql:        viper.GetBool("graphiql"),
-				DocumentRoot:    Config.RootDir,
-				ResolverDir:     viper.GetString("resolverDir"),
-				ContextExecPath: viper.GetString("contextExecPath"),
-				ContextFilesDir: viper.GetString("contextFilesDir"),
+				HotReload:    viper.GetBool("hot"),
+				Graphiql:     viper.GetBool("graphiql"),
+				DocumentRoot: Config.RootDir,
+				ResolverDir:  viper.GetString("resolverDir"),
 			}
 
 			if cc := Config.CORS; cc != nil {
@@ -161,14 +161,6 @@ func init() {
 			graph.Graphiql = x
 		}
 
-		if x := confGraph.ContextExecPath; x != "" {
-			graph.ContextExecPath = x
-		}
-
-		if x := confGraph.ContextFilesDir; x != "" {
-			graph.ContextFilesDir = x
-		}
-
 		if x := confGraph.MaxBodyReadSize; x > 0 {
 			graph.MaxBodyReadSize = x
 		}
@@ -179,6 +171,10 @@ func init() {
 
 		if x := confGraph.BasicAuth; x != nil {
 			graph.BasicAuth = x
+		}
+
+		if x := confGraph.Context; x != nil {
+			graph.Context = x
 		}
 
 		Config.Graphs = append(Config.Graphs, graph)
@@ -209,7 +205,7 @@ func defaults() {
 	viper.SetDefault("hot", false)
 	viper.SetDefault("graphiql", false)
 	viper.SetDefault("contextExecPath", "")
-	viper.SetDefault("contextFilesDir", "")
+	viper.SetDefault("contextTmpDir", "")
 	viper.SetDefault("resolverDir", "/")
 	viper.SetDefault("port", "80")
 	viper.SetDefault("logJSON", false)

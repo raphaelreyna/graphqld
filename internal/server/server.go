@@ -60,7 +60,13 @@ func (s *Server) Start() error {
 		}
 	}
 
-	return s.Server.ListenAndServe()
+	switch tls := s.conf.TLS; tls {
+	case nil:
+		return s.Server.ListenAndServe()
+	default:
+		return s.Server.ListenAndServeTLS(tls.CertFile, tls.KeyFile)
+	}
+
 }
 
 func (s *Server) Stop() error {

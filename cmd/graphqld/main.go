@@ -49,11 +49,9 @@ func logConfig(c config.Conf) {
 		Bool("hot", c.HotReload).
 		Bool("graphiql", c.Graphiql).
 		Str("resolver-wd", c.ResolverDir)
-	if c.ContextExecPath != "" {
-		logEvent = logEvent.Str("ctx-exec-path", c.ContextExecPath)
-	}
-	if c.ContextFilesDir != "" {
-		logEvent = logEvent.Str("ctx-files-wd", c.ContextFilesDir)
+
+	if c.Context == nil {
+		logEvent = logEvent.Interface("context", c.Context)
 	}
 
 	logEvent.Msg("graph default configuration")
@@ -65,12 +63,11 @@ func logConfig(c config.Conf) {
 			Str("server-name", g.ServerName).
 			Str("document-root", g.DocumentRoot).
 			Str("resolver-dir", g.ResolverDir)
-		if g.ContextExecPath != "" {
-			logEvent = logEvent.Str("ctx-exec-path", g.ContextExecPath)
+
+		if g.Context == nil {
+			logEvent = logEvent.Interface("context", g.Context)
 		}
-		if g.ContextFilesDir != "" {
-			logEvent = logEvent.Str("ctx-files-wd", g.ContextFilesDir)
-		}
+
 		logEvent.Msg("loaded graph configuration")
 	}
 }

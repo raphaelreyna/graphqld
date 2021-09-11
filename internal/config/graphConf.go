@@ -14,12 +14,11 @@ type GraphConf struct {
 	ResolverDir     string
 	Graphiql        bool
 	graphiqlSet     bool
-	ContextExecPath string
-	ContextFilesDir string
 	MaxBodyReadSize int64
 
 	CORS      *CORSConfig
 	BasicAuth *BasicAuth
+	Context   *Context
 }
 
 func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
@@ -43,14 +42,6 @@ func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
 		gc.graphiqlSet = true
 	}
 
-	if x, ok := m["contextExecPath"]; ok {
-		gc.ContextExecPath = x.(string)
-	}
-
-	if x, ok := m["contextFilesDir"]; ok {
-		gc.ContextFilesDir = x.(string)
-	}
-
 	if x, ok := m["maxBodySize"]; ok {
 		gc.MaxBodyReadSize = x.(int64)
 	}
@@ -64,24 +55,6 @@ func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
 		}
 		gc.ResolverDir = path
 	}
-	if !filepath.IsAbs(gc.ContextExecPath) && gc.ContextExecPath != "" {
-		path, err := filepath.Abs(gc.ContextExecPath)
-		if err != nil {
-			log.Fatal().Err(err).
-				Str("path", gc.ContextExecPath).
-				Msg("unable to compute absolute rooth path")
-		}
-		gc.ContextExecPath = path
-	}
-	if !filepath.IsAbs(gc.ContextFilesDir) && gc.ContextFilesDir != "" {
-		path, err := filepath.Abs(gc.ContextFilesDir)
-		if err != nil {
-			log.Fatal().Err(err).
-				Str("path", gc.ContextFilesDir).
-				Msg("unable to compute absolute rooth path")
-		}
-		gc.ContextFilesDir = path
-	}
 
 	if x, ok := m["cors"].(map[interface{}]interface{}); ok {
 		gc.CORS = CORSConfigFromMap(x)
@@ -89,6 +62,10 @@ func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
 
 	if x, ok := m["basicAuth"].(map[interface{}]interface{}); ok {
 		gc.BasicAuth = basicAuthFromMap(x)
+	}
+
+	if x, ok := m["context"].(map[interface{}]interface{}); ok {
+		gc.Context = contextFromMap(x)
 	}
 
 	return gc

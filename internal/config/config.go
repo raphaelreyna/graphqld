@@ -16,12 +16,12 @@ type Conf struct {
 	HotReload       bool
 	ResolverDir     string
 	Graphiql        bool
-	ContextExecPath string
-	ContextFilesDir string
 	MaxBodyReadSize int64
 
 	CORS      *CORSConfig
 	BasicAuth *BasicAuth
+	TLS       *TLS
+	Context   *Context
 
 	Graphs []GraphConf
 }
@@ -80,5 +80,41 @@ func (c Conf) readInConf() {
 		}
 
 		Config.BasicAuth = basicAuthFromMap(m)
+	}
+
+	if x, ok := viper.Get("tls").(map[string]interface{}); ok {
+		Config.TLS = tlsFromMap(x)
+	}
+
+	if x, ok := viper.Get("context").(map[string]interface{}); ok {
+		m := make(map[interface{}]interface{})
+		for k, v := range x {
+			m[k] = v
+		}
+
+		Config.Context = contextFromMap(m)
+	}
+
+	{
+		var (
+			ctxPath = viper.GetString("contextExecPath")
+			tmpDir  = viper.GetString("contextTmpDir")
+		)
+
+		if ctxPath != "" {
+			if Config.Context == nil {
+				Config.Context = &Context{}
+			}
+
+			Config.Context.ExecPath = ctxPath
+		}
+
+		if tmpDir != "" {
+			if Config.Context == nil {
+				Config.Context = &Context{}
+			}
+
+			Config.Context.TmpDir = tmpDir
+		}
 	}
 }
