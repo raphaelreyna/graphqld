@@ -31,6 +31,25 @@ func init() {
 
 	defaults()
 
+	Config.readInConf()
+
+	if x, ok := viper.Get("log").(map[string]interface{}); ok {
+		Config.Log = logFromMap(x)
+	}
+
+	{
+		var logc = Config.Log
+
+		if !logc.JSON {
+			log.Logger = log.Output(zerolog.ConsoleWriter{
+				Out:     os.Stdout,
+				NoColor: !logc.Color,
+			})
+		}
+
+		log.Logger = log.Logger.Level(logc.Level)
+	}
+
 	if !viper.GetBool("logJSON") {
 		log.Logger = log.Output(zerolog.ConsoleWriter{
 			Out:     os.Stdout,
@@ -38,7 +57,9 @@ func init() {
 		})
 	}
 
-	Config.readInConf()
+	log.Info().
+		Str("file", viper.ConfigFileUsed()).
+		Msg("read configuration")
 
 	var (
 		confGraphs = make(map[string]GraphConf)

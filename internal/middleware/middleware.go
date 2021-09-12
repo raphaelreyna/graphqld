@@ -16,7 +16,7 @@ import (
 
 	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/hlog"
+	"github.com/rs/zerolog/log"
 )
 
 type key uint
@@ -57,20 +57,45 @@ func GetEnv(ctx context.Context) []string {
 	return ctx.Value(keyEnv).([]string)
 }
 
+func Log(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var (
+			ctx = r.Context()
+			c   = log.With().
+				Str("mehod", r.Method).
+				Str("host", r.Host).
+				Str("url", r.URL.String()).
+				Str("ip", r.RemoteAddr)
+		)
+
+		if ua := r.Header.Get("User-Agent"); ua != "" {
+			c = c.Str("user-agent", ua)
+		}
+
+		if ref := r.Header.Get("Referer"); ref != "" {
+			c = c.Str("referer", ref)
+		}
+
+		var logger = c.Logger()
+		ctx = context.WithValue(ctx, keyLog, &logger)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
 	return func(handler http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var (
 				ctx    = r.Context()
-				logger = hlog.FromRequest(r)
 				env    = getEnv(r)
+				logger = GetLogger(ctx)
 			)
 
-			logger.Info().Msg("got HTTP request")
+			logger.Info().Send()
 
 			ctx = context.WithValue(ctx, keyEnv, env)
 			ctx = context.WithValue(ctx, keyHeaderFunc, w.Header)
-			ctx = context.WithValue(ctx, keyLog, logger)
 
 			if cctx := c.Context; cctx != nil {
 				ctxFile, err := ioutil.TempFile(cctx.TmpDir, "")

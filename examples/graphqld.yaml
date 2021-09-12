@@ -57,19 +57,28 @@ basicAuth:
 # context allows for a static context to be passed to the resolvers.
 # this should be marshalable as JSON.
 # this context is ignored if execPath is not empty.
-#context:
-   # execPath is the path to an executable that will read the request
-   # and return some json as the context to be passed to the resolvers.
-#  execPath: ""
+context:
+  # execPath is the path to an executable that will read the request
+  # and return some json as the context to be passed to the resolvers.
+  execPath: ""
 
-   # tmpDir is where the context file for each request will be written to
-   # defaults to your tmp dir
-#  tmpDir: ""
+  # tmpDir is where the context file for each request will be written to
+  # defaults to your tmp dir
+  tmpDir: ""
 
-   # context allows for a static context to be passed to the resolvers.
-   # this should be marshalable as JSON.
-   # this context is ignored if execPath is not empty.
-#  context:
+  # context allows for a static context to be passed to the resolvers.
+  # this should be marshalable as JSON.
+  # this context is ignored if execPath is not empty.
+  context:
+    loggedIn: true
+    user: "graphqld"
+
+log:
+  json: false
+  # color does nothing if json is true
+  color: true
+  # acceptable levels: info | warn | error | fatal | disabled
+  level: "info"
 
 # graphs is a list of graph specific configurations.
 # Each graphs serverName must match the name of the graphs directory in the root dir.
@@ -82,11 +91,7 @@ graphs:
     hot: false
     workingDir: "."
     context:
-      execPath: "./example1.localhost/auth.py"
-#     context:
-#       loggedIn: true
-#       user:
-#         name: "yaml"
+      execPath: "./graphqld/example1.localhost/auth.py"
     cors:
       allowCredentials: true
       allowedHeaders:

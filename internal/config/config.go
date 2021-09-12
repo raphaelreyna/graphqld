@@ -22,6 +22,7 @@ type Conf struct {
 	BasicAuth *BasicAuth
 	TLS       *TLS
 	Context   *Context
+	Log       *Log
 
 	Graphs []GraphConf
 }
@@ -35,10 +36,6 @@ func (c Conf) readInConf() {
 		}
 
 		log.Info().Msg("no configuration file found")
-	} else {
-		log.Info().
-			Str("file", viper.ConfigFileUsed()).
-			Msg("read configuration")
 	}
 
 	Config.Hostname = viper.GetString("hostname")
@@ -95,6 +92,7 @@ func (c Conf) readInConf() {
 		Config.Context = contextFromMap(m)
 	}
 
+	// Grab the contextExecPath from the environment
 	{
 		var (
 			ctxPath = viper.GetString("contextExecPath")

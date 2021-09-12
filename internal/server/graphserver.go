@@ -100,6 +100,8 @@ func newServer(addr string, mux *mux.Router, conf config.GraphConf) (*server, er
 		mux.Handle("/graphiql", handler)
 	}
 
+	mux.Use(middleware.Log)
+
 	mux.Use(middleware.FromGraphConf(conf))
 
 	if ba := conf.BasicAuth; ba != nil {
