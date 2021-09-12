@@ -6,7 +6,7 @@ import json
 args = sys.argv
 
 if 1 < len(args):
-    if args[1] == "--cggi-fields":
+    if args[1] == "--graphqld-fields":
         print("[\"charCount(string: String!): CharCountResponse!\"]")
     if (args[1] == "--string") & (len(args) == 3):
         strng = args[2]

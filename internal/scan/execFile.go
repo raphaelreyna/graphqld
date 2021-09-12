@@ -32,18 +32,18 @@ func (ef *ExecFile) Scan() error {
 	)
 	// populate fieldStrings
 	{
-		cmd := exec.Command(path, "--cggi-fields")
+		cmd := exec.Command(path, "--graphqld-fields")
 		schemaBytes, err := cmd.Output()
 		if err != nil {
 			return fmt.Errorf(
-				"error executing %s --cggi-fields: %w",
+				"error executing %s --graphqld-fields: %w",
 				path, ErrNotAResolver,
 			)
 		}
 
 		if err := json.Unmarshal(schemaBytes, &fieldStrings); err != nil {
 			return fmt.Errorf(
-				"error parsing json output of %s --cggi-fields: %w",
+				"error parsing json output of %s --graphqld-fields: %w",
 				path, err,
 			)
 		}

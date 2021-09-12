@@ -7,7 +7,7 @@ import os
 if __name__ == '__main__':
     args = sys.argv
     if 1 < len(args):
-        if args[1] == "--cggi-fields":
+        if args[1] == "--graphqld-fields":
             print("[\"python(ssss: PythonInput): String!\"]")
         else:
             inputJSON = args[2]

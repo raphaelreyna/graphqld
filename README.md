@@ -179,13 +179,13 @@ graphs:
 # How it works
 The graph is built scanning the given directory and querying each executable for its fields:
 ```bash
-$ ./example/charCount.py --cggi-fields 
+$ ./example/charCount.py --graphqld-fields 
 ["charCount(string: String!): CharCountResponse!"]
 
-$ ./example/python.py --cggi-fields
+$ ./example/python.py --graphqld-fields
 ["python: String!"]
 
-$ ./example/javascript.js --cggi-fields
+$ ./example/javascript.js --graphqld-fields
 ["javascript: String"]
 ```
 The the top level executables are understood to collectively define the root `query` type; complex types are only added when referenced by the graph.

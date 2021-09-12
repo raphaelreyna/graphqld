@@ -6,7 +6,7 @@ import json
 args = sys.argv
 
 if 1 < len(args):
-    if args[1] == "--cggi-fields":
+    if args[1] == "--graphqld-fields":
         print("[\"guestBook(e: Status): [String]\"]")
 else:
     with open("guestbook.txt", "r+") as f:
