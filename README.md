@@ -1,80 +1,67 @@
 <img src="https://raw.githubusercontent.com/raphaelreyna/graphqld/master/logo/graphqld.png" width="500" height="130">
 
+Build GraphQL backends using [CGI](https://en.wikipedia.org/wiki/Common_Gateway_Interface) style executables.
 
-# graphqld
-Do you miss being able to throw CGI scripts into an FTP server and call it a day?
-Is GraphQL the only thing holding you back from living in the past?
-
-If so, then try graphqld, the graphql "CGI" server.
-
-Still an experiment/poc.
-
-# Working example
-Consider the following schema:
-```graphql
-type Query {
-  python(ssss: PythonInput): String!
-  javascript: String
-  charCount(string: String!): CharCountResponse!
-}
- 
-type CharCountResponse {
-  string: String!
-  count: Int!
-  isEven: Boolean!
-}
-
-input PythonInput {
-  Name: String!
-  LevelTwo: PythonInputTwo
-}
-
-input PythonInputTwo {
-  IncludeVersion: Boolean!
-}
- ```
-To serve up this graph with graphqld we create a directory with the following structure and run `graphqld -f ./example/graphqld.yaml`:
-```
-example/graph
-├── charCount.py
-├── CharCountResponse
-│   ├── CharCountResponse.graphql
-│   ├── isEven.py
-│   └── IsEvenResponse
-│       └── IsEvenResponse.graphql
-├── javascript.js
-├── PythonInput
-│   ├── PythonInput.graphql
-│   └── PythonInputTwo
-│       └── PythonInputTwo.graphql
-└── python.py
-```
-
-See [the example directory](https://github.com/raphaelreyna/graphqld/tree/master/example/graph) to check out examples of these scripts.
+# Overview
+Graphqld aims to bring the two main advantages of CGI to GraphQL:
+- CGI executables are language independent, allowing developers to use their prefered language, even across teams.
+- The CGI server (or graphqld) provides a simple interface for responding to HTTP (or GraphQL) requests.
 
 
-# Contexts
-While full blown support for contexts including passing around functions and objects is tricky (thoughts/suggestions are welcome!).
+## How it works
+Graphqld relies on two types of files in its root directory, `.graphql` schema files and executables/scripts which are the resolvers.
+All GraphQL types, except for objects, are defined using only the schema files (or one big schema file, its up to you). 
+Objects are defined in 3 ways:
+- In a schema file.
+- By directories and executables/scripts. Each directory corresponds to an object with that same name; executables/scripts that output field definitions when passed the `--graphqld-fields` flag become resolvers for those fields. The fields defined by executables are added to the object defined by their parent directory.
+- A combination of the first two.
+
+Any directory that defines a graph must contains either a `Query` or `Mutation` directory (or both).
+
+## Features
+- Hot server / live reloading; rebuild a graph any time a file changes in its root directory.
+- Multiple graphs; graphqld can serve up multiple graphs, each on its own domain name.
+- Built in GraphiQL server; easily explore your graphs.
+- Built in HTTP username and password authentication.
+- TLS/HTTPS support.
+- CORS support.
+- Access HTTP request info through environment variables in resolvers; resolvers can access cookies, header values, and request info.
+- Set HTTP header values from resolvers; just like with CGI, resolvers can set headers and write cookies.
+- Flexible contexts; the graphql context passed to each resolver is availble as a JSON file at `/dev/fd/3` and can be statically set from a config file or dynamically created using a designated executable.
+- Flexible logging; graphqld can do either structured logging or pretty-printed human-friendly logging (with color!)
 
 
-What is currently supported is a static JSON context.
-If the `GRAPHQLD_CTX_EXEC` env var points to an executable, that executble will be ran at the beginning of every request, before graph resolution happens. Its output will be copied into a file which will be made available to each resolver at `/dev/fd/3`. The HTTP header from the incoming request will be made available to this context providing executable, just as with CGI.
 
+### Serving multiple graphs
+If graphqld finds directories named `Query` or `Mutation` in its root directoty, it will serve up a single graph with the Query object defined by `Query` and the Mutation object by `Mutation`.
 
-This at least allows for some level of auth.
+If neither a `Query` or `Mutation` directory is found in the root directory, graphqld will assume multiple graphs are to be served.
+Each graph is defined by a directory, where the directory name is the hostname (ex "mycoolgraph.io") for that particular graph.
+Each of these directories should then each contain either a `Query` directory or a `Mutation` directory (or both)
 
+### Still missing...
+- support for defining abstract types (interfaces and unions)
+- full blown context support (not just JSON), although this is most likely too difficult / not possible.
 
-See [the example auth python script](https://github.com/raphaelreyna/graphqld/tree/master/example/auth.py) to check out example of a context providing executable.
+# Examples
+Two examples are provided [here](https://github.com/raphaelreyna/graphqld/tree/master/examples/graphqld) and an example configuration file [here](https://github.com/raphaelreyna/graphqld/blob/master/examples/graphqld.yaml).
 
-# Extras
-### Hot Server / Live Reloading
-The graph can be rebuilt whenever theres a change in the root directory.
-To enable this, simply set `GRAPHQLD_HOT_RELOAD=TRUE`.
+### Serving both example graphs
+Run graphqld from the `./examples` directory. Done.
 
-### GraphiQL
-To enable the built-in GraphiQL server at `/graphiql`, simply set `GRAPHQLD_GRAPHIQL=TRUE`.
+This directory contains a configration file `graphqld.yaml` which sets `./examples/graphqld` as the root directory.
+Since `./examples/graphqld` contains two directories each defining a graph, they're each served and accessed via their directory name as the hostname (`http://example1.localhost/`) to reach the graph defined in `./examples/graphqld/example1.localhost`.
+
+### Serving a single example graph
+Modify the config file at `./examples/graphqld.yaml` by changing the `root` value from `./graphqld` to `./graphqld/example1`, then run graphqld from the `./examples`  directory. Done.
+
+Since the root directory we just set in our config file contains a `Query` directory, graphqld recognizes the root dir as defining a single graph.
 
 # Configuration
+On startup, graphqld will look for a configuration file `graphqld.yaml` in `.`, `$HOME/.config/graphqld` or `/etc` (in that order).
+Config values set via the environment will override those set by a config file.
+
+## example `graphqld.yaml` configuration file
 ```yaml
 # hostname is ignored if serving multiple graphs;
 # each graphs serverName will be used instead.
@@ -135,19 +122,28 @@ basicAuth:
 # context allows for a static context to be passed to the resolvers.
 # this should be marshalable as JSON.
 # this context is ignored if execPath is not empty.
-#context:
-   # execPath is the path to an executable that will read the request
-   # and return some json as the context to be passed to the resolvers.
-#  execPath: ""
+context:
+  # execPath is the path to an executable that will read the request
+  # and return some json as the context to be passed to the resolvers.
+  execPath: ""
 
-   # tmpDir is where the context file for each request will be written to
-   # defaults to your tmp dir
-#  tmpDir: ""
+  # tmpDir is where the context file for each request will be written to
+  # defaults to your tmp dir
+  tmpDir: ""
 
-   # context allows for a static context to be passed to the resolvers.
-   # this should be marshalable as JSON.
-   # this context is ignored if execPath is not empty.
-#  context:
+  # context allows for a static context to be passed to the resolvers.
+  # this should be marshalable as JSON.
+  # this context is ignored if execPath is not empty.
+  context:
+    loggedIn: true
+    user: "graphqld"
+
+log:
+  json: false
+  # color does nothing if json is true
+  color: true
+  # acceptable levels: info | warn | error | fatal | disabled
+  level: "info"
 
 # graphs is a list of graph specific configurations.
 # Each graphs serverName must match the name of the graphs directory in the root dir.
@@ -160,11 +156,7 @@ graphs:
     hot: false
     workingDir: "."
     context:
-      execPath: "./example1.localhost/auth.py"
-#     context:
-#       loggedIn: true
-#       user:
-#         name: "yaml"
+      execPath: "./graphqld/example1.localhost/auth.py"
     cors:
       allowCredentials: true
       allowedHeaders:
@@ -173,32 +165,49 @@ graphs:
         - "localhost"
         - "127.0.0.1"
       ignoreOptions: true
-
 ```
 
-# How it works
-The graph is built scanning the given directory and querying each executable for its fields:
-```bash
-$ ./example/charCount.py --graphqld-fields 
-["charCount(string: String!): CharCountResponse!"]
+## environment variables
+### `GRAPHQLD_CTX_EXEC_PATH`
+- Description: Defines the default path to an executable that can provide a context for each incoming request.
+- Default: ""
 
-$ ./example/python.py --graphqld-fields
-["python: String!"]
+### `GRAPHQLD_CTX_TMP_DIR`
+- Description: The directory where the temporary context files will be written to.
+- Default: ""
 
-$ ./example/javascript.js --graphqld-fields
-["javascript: String"]
-```
-The the top level executables are understood to collectively define the root `query` type; complex types are only added when referenced by the graph.
+### `GRAPHQLD_RESOLVER_DIR`
+- Description: The working directory for resolvers.
+- Default: "/"
 
-Field arguments are provided via os args:
-```bash
-$ ./example/charCount.py --string hello
-{"string": "hello", "count": 5}
-```
+### `GRAPHQLD_LOG_JSON`
+- Description: Log structured JSON.
+- Default: false
 
-Each executable is used as the resolver for the field it reports.
-Complex types with no resolvers may be definied with a `{{TYPE_NAME}}/{{TYPE_NAME}}.graphql` file.
+### `GRAPHQLD_LOG_COLOR`
+- Description: Use color for human-friendly logging.
+- Default: true
 
-# Still missing...
-- support for defining interfaces
-- a lot of other things, this is still a pretty early stage project
+### `GRAPHQLD_MAX_BODY_SIZE`
+- Description: The max size of an incoming request body.
+- Default: 1048576
+
+### `GRAPHQLD_HOSTNAME`
+- Description: The hostname that graphqld will listen for.
+- Default: ""
+
+### `GRAPHQLD_ADDRESS`
+- Description: The address that graphqld will bind to.
+- Default: ":80"
+
+### `GRAPHQLD_ROOT`
+- Description: The root directory of graphqld, where it looks for graphs.
+- Default: "/var/graphqld"
+
+### `GRAPHQLD_HOT`
+- Description: Rebuild graphs when a file in their root directory changes.
+- Default: false
+
+### `GRAPHQLD_GRAPHIQL`
+- Description: Serve a GraphiQL client at "/graphiql"
+- Default: false
