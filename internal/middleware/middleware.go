@@ -135,6 +135,16 @@ func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
 								Gid: user.Gid,
 							},
 						}
+
+						cmd.Env = append(cmd.Env,
+							"USER="+user.Name,
+							"USERNAME="+user.Name,
+							"LOGNAME="+user.Name,
+						)
+
+						if user.HomeDir != "" {
+							cmd.Env = append(cmd.Env, "HOME="+user.HomeDir)
+						}
 					}
 
 					ctxData, err = cmd.Output()

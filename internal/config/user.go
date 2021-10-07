@@ -8,8 +8,10 @@ import (
 )
 
 type User struct {
-	Uid uint32
-	Gid uint32
+	Name    string
+	HomeDir string
+	Uid     uint32
+	Gid     uint32
 }
 
 func userFromName(name string) *User {
@@ -51,6 +53,8 @@ func userFromName(name string) *User {
 
 	u.Uid = uint32(uid)
 	u.Gid = uint32(gid)
+	u.Name = name
+	u.HomeDir = uu.HomeDir
 
 	return &u
 }

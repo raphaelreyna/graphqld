@@ -43,6 +43,16 @@ func (ef *ExecFile) Scan() error {
 					Gid: user.Gid,
 				},
 			}
+
+			cmd.Env = append(cmd.Env,
+				"USER="+user.Name,
+				"USERNAME="+user.Name,
+				"LOGNAME="+user.Name,
+			)
+
+			if user.HomeDir != "" {
+				cmd.Env = append(cmd.Env, "HOME="+user.HomeDir)
+			}
 		}
 
 		schemaBytes, err := cmd.CombinedOutput()
