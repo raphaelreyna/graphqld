@@ -11,12 +11,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 
 	"github.com/graphql-go/graphql"
+	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/raphaelreyna/graphqld/internal/middleware"
 )
 
-func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphql.FieldResolveFn, error) {
+func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition, c *config.GraphConf) (*graphql.FieldResolveFn, error) {
 	var (
 		takesArgs  = 0 < len(field.Args)
 		scriptName = filepath.Base(path)
@@ -71,6 +73,15 @@ func NewFieldResolveFn(path, wd string, field *graphql.FieldDefinition) (*graphq
 			}
 
 			cmd.Stdin = bytes.NewReader(source)
+		}
+
+		if user := c.User; user != nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				Credential: &syscall.Credential{
+					Uid: user.Uid,
+					Gid: user.Gid,
+				},
+			}
 		}
 
 		env := middleware.GetEnv(ctx)

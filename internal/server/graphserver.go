@@ -125,7 +125,7 @@ func (s *server) UpdateSchema() error {
 		}
 	)
 
-	if err := g.Build(); err != nil {
+	if err := g.Build(&conf); err != nil {
 		var logEvent *zerolog.Event
 		if conf.HotReload {
 			logEvent = log.Error()

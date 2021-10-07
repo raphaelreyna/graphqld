@@ -7,9 +7,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
+	"github.com/raphaelreyna/graphqld/internal/config"
 )
 
 var ErrNotAResolver = errors.New("not a resolver")
@@ -33,7 +35,17 @@ func (ef *ExecFile) Scan() error {
 	// populate fieldStrings
 	{
 		cmd := exec.Command(path, "--graphqld-fields")
-		schemaBytes, err := cmd.Output()
+
+		if user := config.Config.User; user != nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{
+				Credential: &syscall.Credential{
+					Uid: user.Uid,
+					Gid: user.Gid,
+				},
+			}
+		}
+
+		schemaBytes, err := cmd.CombinedOutput()
 		if err != nil {
 			return fmt.Errorf(
 				"error executing %s --graphqld-fields: %w",

@@ -24,7 +24,15 @@ func NewFile(path string, info fs.FileInfo) File {
 		ext  = filepath.Ext(name)
 
 		isUserExec = func(info fs.FileInfo) bool {
-			return info.Mode().Perm()&0100 != 0 && !info.IsDir()
+			var (
+				perms = info.Mode().Perm()
+
+				isUserExec  = perms&0100 != 0
+				isGroupExec = perms&0010 != 0
+				isOtherExec = perms&0001 != 0
+			)
+
+			return (isUserExec || isGroupExec || isOtherExec) && !info.IsDir()
 		}
 	)
 	name = strings.TrimSuffix(name, ext)

@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 
 	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/rs/zerolog"
@@ -125,8 +126,16 @@ func FromGraphConf(c config.GraphConf) func(http.Handler) http.Handler {
 							Path: cctx.ExecPath,
 							Env:  env,
 						}
-						err error
 					)
+
+					if user := c.User; user != nil {
+						cmd.SysProcAttr = &syscall.SysProcAttr{
+							Credential: &syscall.Credential{
+								Uid: user.Uid,
+								Gid: user.Gid,
+							},
+						}
+					}
 
 					ctxData, err = cmd.Output()
 					if err != nil {

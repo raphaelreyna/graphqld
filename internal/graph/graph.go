@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/graphql-go/graphql"
+	"github.com/raphaelreyna/graphqld/internal/config"
 	"github.com/raphaelreyna/graphqld/internal/graph/resolver"
 )
 
@@ -23,7 +24,7 @@ type Graph struct {
 	Mutation *graphql.Object
 }
 
-func (g *Graph) Build() error {
+func (g *Graph) Build(c *config.GraphConf) error {
 	definitions, resolverPaths, err := g.scanForDefinitions()
 	if err != nil {
 		return err
@@ -60,7 +61,7 @@ func (g *Graph) Build() error {
 
 		for fieldName, resolverPath := range resolverPaths {
 			var field = fields[fieldName]
-			resolver, err := resolver.NewFieldResolveFn(resolverPath, g.ResolverDir, field)
+			resolver, err := resolver.NewFieldResolveFn(resolverPath, g.ResolverDir, field, c)
 			if err != nil {
 				return err
 			}

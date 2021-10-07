@@ -16,6 +16,8 @@ type Conf struct {
 	HotReload       bool
 	ResolverDir     string
 	Graphiql        bool
+	User            *User
+	UID, GID        uint32
 	MaxBodyReadSize int64
 
 	CORS      *CORSConfig
@@ -69,6 +71,8 @@ func (c Conf) readInConf() {
 	if Config.Addr == "" {
 		Config.Addr = ":" + viper.GetString("port")
 	}
+
+	Config.User = userFromName(viper.GetString("user"))
 
 	if x, ok := viper.Get("basicAuth").(map[string]interface{}); ok {
 		m := make(map[interface{}]interface{})

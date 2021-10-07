@@ -14,6 +14,7 @@ type GraphConf struct {
 	ResolverDir     string
 	Graphiql        bool
 	graphiqlSet     bool
+	User            *User
 	MaxBodyReadSize int64
 
 	CORS      *CORSConfig
@@ -47,6 +48,12 @@ func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
 	if x, ok := m["maxBodySize"]; ok {
 		if y := x.(int64); y != 0 {
 			gc.MaxBodyReadSize = y
+		}
+	}
+
+	if x, ok := m["user"]; ok {
+		if name := x.(string); name != "" {
+			gc.User = userFromName(name)
 		}
 	}
 

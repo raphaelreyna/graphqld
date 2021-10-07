@@ -104,11 +104,12 @@ func init() {
 			}
 
 			gc := GraphConf{
-				HotReload:       viper.GetBool("hot"),
-				Graphiql:        viper.GetBool("graphiql"),
+				HotReload:       Config.HotReload,
+				Graphiql:        Config.HotReload,
 				DocumentRoot:    path,
-				ResolverDir:     viper.GetString("resolverDir"),
-				MaxBodyReadSize: viper.GetInt64("maxBodySize"),
+				ResolverDir:     Config.ResolverDir,
+				User:            Config.User,
+				MaxBodyReadSize: Config.MaxBodyReadSize,
 			}
 
 			if cc := Config.CORS; cc != nil {
@@ -134,11 +135,12 @@ func init() {
 
 		if len(dirGraphs) == 0 {
 			gc := GraphConf{
-				HotReload:       viper.GetBool("hot"),
-				Graphiql:        viper.GetBool("graphiql"),
+				HotReload:       Config.HotReload,
+				Graphiql:        Config.HotReload,
 				DocumentRoot:    Config.RootDir,
-				ResolverDir:     viper.GetString("resolverDir"),
-				MaxBodyReadSize: viper.GetInt64("maxBodySize"),
+				ResolverDir:     Config.ResolverDir,
+				User:            Config.User,
+				MaxBodyReadSize: Config.MaxBodyReadSize,
 			}
 
 			if cc := Config.CORS; cc != nil {
@@ -197,6 +199,10 @@ func init() {
 
 		if x := confGraph.Context; x != nil {
 			graph.Context = x
+		}
+
+		if x := confGraph.User; x != nil {
+			graph.User = x
 		}
 
 		Config.Graphs = append(Config.Graphs, graph)
