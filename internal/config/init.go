@@ -134,10 +134,11 @@ func init() {
 
 		if len(dirGraphs) == 0 {
 			gc := GraphConf{
-				HotReload:    viper.GetBool("hot"),
-				Graphiql:     viper.GetBool("graphiql"),
-				DocumentRoot: Config.RootDir,
-				ResolverDir:  viper.GetString("resolverDir"),
+				HotReload:       viper.GetBool("hot"),
+				Graphiql:        viper.GetBool("graphiql"),
+				DocumentRoot:    Config.RootDir,
+				ResolverDir:     viper.GetString("resolverDir"),
+				MaxBodyReadSize: viper.GetInt64("maxBodySize"),
 			}
 
 			if cc := Config.CORS; cc != nil {

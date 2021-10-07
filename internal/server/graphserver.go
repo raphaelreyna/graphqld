@@ -178,7 +178,7 @@ func (s *server) Start() error {
 			}
 		}()
 
-		return s.w.Start(time.Second)
+		go s.w.Start(time.Second)
 	}
 
 	return err

@@ -22,7 +22,9 @@ type GraphConf struct {
 }
 
 func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
-	var gc GraphConf
+	var gc = GraphConf{
+		MaxBodyReadSize: 1 << 20, // 1MB
+	}
 
 	if x, ok := m["serverName"]; ok {
 		gc.ServerName = x.(string)
@@ -43,7 +45,9 @@ func graphConfFromMap(m map[interface{}]interface{}) GraphConf {
 	}
 
 	if x, ok := m["maxBodySize"]; ok {
-		gc.MaxBodyReadSize = x.(int64)
+		if y := x.(int64); y != 0 {
+			gc.MaxBodyReadSize = y
+		}
 	}
 
 	if !filepath.IsAbs(gc.ResolverDir) && gc.ResolverDir != "" {

@@ -30,8 +30,8 @@ const (
 )
 
 func GetLogger(ctx context.Context) *zerolog.Logger {
-	logger := ctx.Value(keyLog).(*zerolog.Logger)
-	if logger == nil {
+	logger, ok := ctx.Value(keyLog).(*zerolog.Logger)
+	if logger == nil || !ok {
 		nop := zerolog.Nop()
 		logger = &nop
 	}
@@ -54,7 +54,12 @@ func GetRHeader(ctx context.Context) http.Header {
 }
 
 func GetEnv(ctx context.Context) []string {
-	return ctx.Value(keyEnv).([]string)
+	env, ok := ctx.Value(keyEnv).([]string)
+	if !ok {
+		return []string{}
+	}
+
+	return env
 }
 
 func Log(next http.Handler) http.Handler {
