@@ -68,7 +68,7 @@ func Log(next http.Handler) http.Handler {
 		var (
 			ctx = r.Context()
 			c   = log.With().
-				Str("mehod", r.Method).
+				Str("method", r.Method).
 				Str("host", r.Host).
 				Str("url", r.URL.String()).
 				Str("ip", r.RemoteAddr)

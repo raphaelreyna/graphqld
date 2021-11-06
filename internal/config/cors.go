@@ -15,7 +15,7 @@ type CORSConfig struct {
 func CORSConfigFromViper() *CORSConfig {
 	var cc CORSConfig
 	if stringMap := viper.GetStringMap("cors"); stringMap != nil {
-		if x, ok := stringMap["allowCredentials"]; ok {
+		if x, ok := stringMap["allowcredentials"]; ok {
 			x, ok := x.(bool)
 			if !ok {
 				log.Fatal().
@@ -24,7 +24,7 @@ func CORSConfigFromViper() *CORSConfig {
 			cc.AllowCredentials = x
 		}
 
-		if x, ok := stringMap["ignoreOptions"]; ok {
+		if x, ok := stringMap["ignoreoptions"]; ok {
 			x, ok := x.(bool)
 			if !ok {
 				log.Fatal().
@@ -33,7 +33,7 @@ func CORSConfigFromViper() *CORSConfig {
 			cc.IgnoreOptions = x
 		}
 
-		if x, ok := stringMap["allowedHeaders"]; ok {
+		if x, ok := stringMap["allowedheaders"]; ok {
 			ifaces, ok := x.([]interface{})
 			if !ok {
 				log.Fatal().
@@ -52,7 +52,7 @@ func CORSConfigFromViper() *CORSConfig {
 			cc.AllowedHeaders = headers
 		}
 
-		if x, ok := stringMap["allowedOrigins"]; ok {
+		if x, ok := stringMap["allowedorigins"]; ok {
 			ifaces, ok := x.([]interface{})
 			if !ok {
 				log.Fatal().
